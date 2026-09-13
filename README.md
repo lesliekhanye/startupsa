@@ -1,38 +1,38 @@
 # Startup SA
 
-An interactive first product preview for discovering emerging South African startups, inspired by Outbid's compact leaderboard and the supplied Startup SA business plan.
+South African startup discovery with a compact community leaderboard. React/Vinext runs on Cloudflare Workers; Supabase provides Postgres and authenticated identities.
 
-## Run
+## Development
 
-Requires Node.js 22.13 or newer.
+Node.js 22.13+ is required. Run `npm run install:ci`, put runtime credentials matching `.env.example` in ignored `.dev.vars`, then run `npm run dev`. Production environment values are configured in Sites; never put secrets in `.openai/hosting.json` or browser code.
 
-```sh
-npm run install:ci
-npm run dev
-```
+`npm run build` builds the Worker. `npx tsc --noEmit` checks types. `npm run test:database` runs the Postgres migration and permission tests in an isolated PGlite database.
 
-The preview URL is printed by the development server. `npm run build` creates the Cloudflare Worker bundle; `npx tsc --noEmit` checks TypeScript.
+## Connected flows
 
-## Implemented
+- Email-code sign-in: server generates a Supabase OTP and sends it using the configured Resend sender. The browser verifies the code directly with Supabase. No project-wide auth templates are changed.
+- Founders submit validated listings. Database ownership is derived from the verified session, never from submitted owner IDs. Retry IDs prevent duplicate submissions after uncertain network responses.
+- Submissions remain private to their owner and Startup SA moderators. Moderators can approve or reject, and rejection requires a reason. Approved listings become public atomically.
+- Public boards count active votes in South African calendar windows: today, Monday-start week, month and all time. Ties use publication date descending and then ID. One vote record per account per startup; toggling keeps the original vote date.
+- Review history is visible under My account. Admin controls require a database moderator role, checked on every review operation.
+- Profile links reopen the correct record after loading. Real website links use only HTTP(S). Missing configuration shows a labelled demo; a failed live connection shows an error rather than silently substituting samples.
 
-- Responsive discovery board with highlighted leading entries and an editorial sidebar.
-- Separate sample vote totals for today, this week (default), this month and all time.
-- Combined search, category and city filters, plus a new-launch feed.
-- Reversible demo votes, stored on the current device.
-- Startup detail dialogs with shareable `?startup=slug` URLs that reopen on refresh.
-- Validated startup draft form with local persistence and restoration.
-- Ranking and community rules, custom favicon, and a feature-detected WebMCP discovery tool.
+## Shared project boundaries
 
-## Explicit preview boundaries
+Startup SA reuses the FinanceAPP Supabase project by owner request. Its objects are `startup_moderators`, `startup_submissions`, `startups`, `startup_votes`, app-specific RPCs and the unexposed `startup_private` schema. The existing finance tables and their policies are unchanged. Accounts use the same Supabase identity directory; sessions are stored separately on each app's origin.
 
-All eight companies, founder names, vote totals and movement figures are fictional sample content. Voting is a local interaction, not a secure or shared community vote. Drafts are saved only in browser storage and are not submitted or published. No production founder accounts, email/domain verification, moderation queue, database, payments, newsletter or analytics are connected.
+The browser receives only the public URL and publishable/anon key. The service key is used only on the server for OTP generation and email throttling. No database connection password is deployed. Domain ownership is not automatically verified: listings say “Reviewed listing,” not “Verified company.”
 
-The planned weighted ranking described in the rules is not the implemented sample-vote sort. Monetary bids do not affect community ranks.
+## Database operations
 
-## Next implementation slice
+The initial migration is in `supabase/migrations/202609130001_startup_sa.sql`. It has been applied to the shared project; do not reapply or edit it. Future changes need new migrations.
 
-Connect authenticated identities and durable startup, submission and vote records; enforce voting uniqueness and moderation on the server; add email/domain verification; then replace samples with approved real listings. Public submissions should remain closed until those flows are complete.
+`scripts/migrate-startup-supabase.mjs ENV_FILE CA_CERT` refuses collisions and preserves existing tables. `scripts/verify-startup-live.mjs ENV_FILE CA_CERT` checks the real database inside one transaction and rolls back all fixtures without sending emails.
 
-## Source
+After the owner supplies the exact admin email and that account has verified its email, run `scripts/set-startup-moderator.mjs ENV_FILE CA_CERT APPROVED_EMAIL`. Never automatically promote the first person to sign in.
 
-`app/page.tsx` contains the preview data and UI, `app/globals.css` contains the responsive visual system, and `app/webmcp.ts` exposes the discovery tool. `.openai/hosting.json` retains the private Sites project identity. The React/Vinext starter also includes optional D1 and auth scaffolding for later implementation.
+## Launch status
+
+The Site remains private. Production email delivery still needs an actual user-requested sign-in to verify receipt. A moderator email must be selected before the review queue can be operated by the owner. No fictional listings are seeded into Supabase.
+
+Company/domain ownership verification, weighted engagement ranking, edit-and-resubmit, reports/takedowns, newsletter, payments and analytics are subsequent product work. Current ranking is transparent vote totals, not the future blended score from the business plan.

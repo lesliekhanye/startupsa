@@ -1,0 +1,39 @@
+import {readFileSync} from 'node:fs';
+import {parseEnv} from 'node:util';
+import {randomUUID} from 'node:crypto';
+import assert from 'node:assert/strict';
+import pg from 'pg';
+const e=parseEnv(readFileSync(process.argv[2],'utf8'));
+const client=new pg.Client({connectionString:e.DATABASE_URL,ssl:{rejectUnauthorized:true,ca:readFileSync(process.argv[3],'utf8')},connectionTimeoutMillis:12000});
+const founder=randomUUID(),moderator=randomUUID(),other=randomUUID(),id=randomUUID();
+async function role(name,uid){await client.query('reset role');await client.query(`set local role ${name}`);await client.query("select set_config('request.jwt.claim.sub',$1,true)",[uid||''])}
+async function denied(sql,params){await client.query('savepoint denial');let rejected=false;try{await client.query(sql,params)}catch{rejected=true}await client.query('rollback to savepoint denial');assert.ok(rejected,'Unauthorised operation must fail')}
+try{
+ await client.connect();await client.query('begin');
+ await client.query("insert into auth.users(id,email,email_confirmed_at,created_at,updated_at,aud,role) values($1,$2,now(),now(),now(),'authenticated','authenticated'),($3,$4,now(),now(),now(),'authenticated','authenticated'),($5,$6,now(),now(),now(),'authenticated','authenticated')",[founder,`startup-test-${founder}@example.invalid`,moderator,`startup-test-${moderator}@example.invalid`,other,`startup-test-${other}@example.invalid`]);
+ await client.query('insert into public.startup_moderators values($1)',[moderator]);
+ await role('authenticated',founder);
+ const payload={name:'Transactional verification',website:`https://${id}.example.invalid`,pitch:'A temporary startup used to verify access controls.',story:'This row exists only in a transaction that will always be rolled back. It is never published to external users.',category:'SaaS',city:'Cape Town',stage:'Building',year:2026,founder:'Temporary test founder'};
+ await client.query('select public.submit_startup($1,$2)',[payload,id]);
+ await client.query('select public.submit_startup($1,$2)',[payload,id]);
+ await denied('select public.review_startup($1,$2,$3)',[id,'approved','']);
+ await role('authenticated',other);
+ assert.equal((await client.query('select id from public.startup_submissions where id=$1',[id])).rowCount,0);
+ await role('anon',null);
+ assert.equal((await client.query('select id from public.startups where id=$1',[id])).rowCount,0);
+ await role('authenticated',moderator);
+ await client.query('select public.review_startup($1,$2,$3)',[id,'approved','Transactional check']);
+ await role('authenticated',founder);
+ await client.query('select public.set_startup_vote($1,true)',[id]);await client.query('select public.set_startup_vote($1,true)',[id]);
+ const board=(await client.query('select public.startup_leaderboard() as board')).rows[0].board;
+ assert.equal(board.find(s=>s.id===id).total_votes,1);assert.equal(board.find(s=>s.id===id).my_vote,true);
+ await role('authenticated',other);
+ assert.equal((await client.query('select * from public.startup_votes where startup_id=$1',[id])).rowCount,0);
+ await denied('insert into public.startup_moderators values($1)',[other]);
+ await role('anon',null);
+ await denied('select public.set_startup_vote($1,true)',[id]);
+ const anonymous=(await client.query('select public.startup_leaderboard() as board')).rows[0].board.find(s=>s.id===id);
+ assert.equal(anonymous.total_votes,1);assert.equal(anonymous.my_vote,false);
+ console.log('PASS: live Supabase submission, approval, vote uniqueness and row permissions.');
+}catch(error){console.error('Verification failed:',error.code||'',String(error.message).replaceAll(e.DATABASE_URL,'[redacted]'));process.exitCode=1}
+finally{try{await client.query('rollback');console.log('Rolled back all temporary users, submissions and votes; no emails sent.')}finally{await client.end()}}
