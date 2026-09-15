@@ -18,12 +18,16 @@ try{
  grant usage on schema auth,public to anon,authenticated,service_role;
  insert into auth.users values('${founder}',now()),('${other}',now()),('${moderator}',now()),('${unverified}',null);`);
  await db.exec(await readFile(new URL('../supabase/migrations/202609130001_startup_sa.sql',import.meta.url),'utf8'));
+ await db.exec('create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]); create table storage.objects(bucket_id text,name text,user_metadata jsonb);');
+ await db.exec(await readFile(new URL('../supabase/migrations/202609150001_logos_notifications.sql',import.meta.url),'utf8'));
  await db.query('insert into public.startup_moderators values($1)',[moderator]);
  const submit=()=>db.query('select public.submit_startup($1,$2)',[payload,submission]);
  await denied('anon',null,'select public.submit_startup($1,$2)',[payload,submission]);
  await denied('authenticated',unverified,'select public.submit_startup($1,$2)',[payload,submission]);
  await as('authenticated',founder,submit);
  await as('authenticated',founder,submit);
+ assert.equal((await db.query("select * from public.startup_email_outbox where event='submitted'")).rows.length,1,'one durable confirmation email per submission');
+ await denied('authenticated',founder,'select * from public.startup_email_outbox');
  assert.equal((await db.query('select * from public.startup_submissions')).rows.length,1,'submission retries are idempotent');
  assert.equal((await as('authenticated',other,()=>db.query('select * from public.startup_submissions'))).rows.length,0,'other founders cannot read submissions');
  assert.equal((await as('authenticated',founder,()=>db.query('select * from public.startup_submissions'))).rows.length,1);
@@ -32,6 +36,7 @@ try{
  await denied('authenticated',founder,'insert into public.startup_moderators values($1)',[founder]);
  await denied('authenticated',founder,'select public.review_startup($1,$2,$3)',[submission,'approved','']);
  await as('authenticated',moderator,()=>db.query('select public.review_startup($1,$2,$3)',[submission,'approved','Checked']));
+ assert.equal((await db.query("select * from public.startup_email_outbox where event='approved'")).rows.length,1,'approval email queued transactionally');
  await denied('authenticated',moderator,'select public.review_startup($1,$2,$3)',[submission,'approved','']);
  const publicBoard=(await as('anon',null,()=>db.query('select public.startup_leaderboard() as board'))).rows[0].board;
  assert.equal(publicBoard.length,1);assert.equal(publicBoard[0].total_votes,0);assert.equal(publicBoard[0].my_vote,false);assert.ok(!('owner_id' in publicBoard[0]));
@@ -57,4 +62,14 @@ try{
  assert.equal((await as('service_role',null,()=>db.query('select public.reserve_startup_email($1,$2) as allowed',['email','ip']))).rows[0].allowed,true);
  assert.equal((await as('service_role',null,()=>db.query('select public.reserve_startup_email($1,$2) as allowed',['email','ip']))).rows[0].allowed,false);
  console.log('PASS: migration, RLS isolation, verified identity, moderation, idempotency, unique votes, vote dates, rejected listings and email throttling.');
+ const logoId='20000000-0000-4000-8000-000000000009';
+ const logoPayload={...payload,name:'Logo Test',website:'https://logo.example',logo_path:logoId+'.png'};
+ await denied('authenticated',founder,'select public.submit_startup($1,$2)',[logoPayload,logoId]);
+ await db.query('insert into storage.objects values($1,$2,$3)',['startup-sa-logos',logoId+'.png',{owner:other}]);
+ await denied('authenticated',founder,'select public.submit_startup($1,$2)',[logoPayload,logoId]);
+ await db.query('update storage.objects set user_metadata=$1',[{owner:founder}]);
+ await as('authenticated',founder,()=>db.query('select public.submit_startup($1,$2)',[logoPayload,logoId]));
+ await as('authenticated',moderator,()=>db.query('select public.review_startup($1,$2,$3)',[logoId,'approved','']));
+ assert.equal((await db.query('select logo_path from public.startups where id=$1',[logoId])).rows[0].logo_path,logoId+'.png');
+ console.log('PASS: private logo ownership validation, logo publication and exactly-once notification queuing.');
 }finally{await db.close()}

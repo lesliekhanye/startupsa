@@ -10,5 +10,5 @@ export const submissionSchema=z.object({
   year:z.coerce.number().int().min(1900).max(new Date().getFullYear()),
   founder:z.string().trim().min(2).max(120),
 });
-export type StartupRecord={id:string;slug:string;name:string;website:string;pitch:string;story:string;category:string;city:string;stage:string;founded_year:number;founder:string;published_at:string;today_votes:number;week_votes:number;month_votes:number;total_votes:number;my_vote:boolean};
-export type SubmissionRecord={id:string;name:string;website:string;pitch:string;story:string;category:string;city:string;stage:string;founded_year:number;founder:string;status:'pending'|'approved'|'rejected';review_note:string|null;created_at:string};
+export type StartupRecord={id:string;slug:string;name:string;website:string;pitch:string;story:string;category:string;city:string;stage:string;founded_year:number;founder:string;published_at:string;today_votes:number;week_votes:number;month_votes:number;total_votes:number;my_vote:boolean;logo_path?:string|null};
+export type SubmissionRecord={id:string;name:string;website:string;pitch:string;story:string;category:string;city:string;stage:string;founded_year:number;founder:string;status:'pending'|'approved'|'rejected';review_note:string|null;created_at:string;logo_path?:string|null};

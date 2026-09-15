@@ -15,13 +15,16 @@ Node.js 22.13+ is required. Run `npm run install:ci`, put runtime credentials ma
 - Submissions remain private to their owner and Startup SA moderators. Moderators can approve or reject, and rejection requires a reason. Approved listings become public atomically.
 - Public boards count active votes in South African calendar windows: today, Monday-start week, month and all time. Ties use publication date descending and then ID. One vote record per account per startup; toggling keeps the original vote date.
 - Review history is visible under My account. Admin controls require a database moderator role, checked on every review operation.
-- Profile links reopen the correct record after loading. Real website links use only HTTP(S). Missing configuration shows a labelled demo; a failed live connection shows an error rather than silently substituting samples.
+- Startup profiles have full routes at `/startups/[slug]`; old `?startup=` links redirect. Voting, sharing and external website links remain available on the detail page.
+- Optional PNG/JPEG/WebP logos are resized/re-encoded in the browser as PNG (5 MB input limit; 4096px maximum input dimension; 512px output). The server validates size and PNG dimensions. Private Supabase Storage serves pending logos only to the owner/moderator; approved logos are visible with their listing. The database validates the uploader before attaching a logo. Uploading a logo is currently part of a new submission, not an edit to an existing listing.
+- Submission and approval events atomically queue email notifications. Server routes send to the verified account email through Resend, never a recipient supplied by the browser. Durable sent markers, a two-minute lease and Resend idempotency keys protect normal retries against duplicates. Provider idempotency expires after 24 hours; an ambiguous send followed by a database failure can still duplicate after that window.
+- Failed email attempts remain queued. Opening My account/Admin retries eligible messages, then retries every minute while that window is open. There is no always-running background scheduler yet. Email trouble does not roll back a saved submission or approval; the account UI shows when mail is waiting.
 
 ## Shared project boundaries
 
 Startup SA reuses the FinanceAPP Supabase project by owner request. Its objects are `startup_moderators`, `startup_submissions`, `startups`, `startup_votes`, app-specific RPCs and the unexposed `startup_private` schema. The existing finance tables and their policies are unchanged. Accounts use the same Supabase identity directory; sessions are stored separately on each app's origin.
 
-The browser receives only the public URL and publishable/anon key. The service key is used only on the server for OTP generation and email throttling. No database connection password is deployed. Domain ownership is not automatically verified: listings say “Reviewed listing,” not “Verified company.”
+The browser receives only the public URL and publishable/anon key. The service key is used only on the server for OTP generation, email throttling, notification delivery and private logo storage. No database connection password is deployed. Domain ownership is not automatically verified: listings say “Reviewed listing,” not “Verified company.”
 
 ## Database operations
 
@@ -33,6 +36,6 @@ After the owner supplies the exact admin email and that account has verified its
 
 ## Launch status
 
-The Site remains private. Production email delivery still needs an actual user-requested sign-in to verify receipt. A moderator email must be selected before the review queue can be operated by the owner. No fictional listings are seeded into Supabase.
+The Site remains private. Email sign-in uses six-digit codes and khanyetariq@gmail.com has moderator access. Notification receipt in a real inbox should be checked during the next user submission and approval; automated tests do not send mail to real users. No fictional listings are seeded into Supabase.
 
 Company/domain ownership verification, weighted engagement ranking, edit-and-resubmit, reports/takedowns, newsletter, payments and analytics are subsequent product work. Current ranking is transparent vote totals, not the future blended score from the business plan.

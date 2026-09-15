@@ -17,7 +17,7 @@ export function useStartupBackend(){
     const [board,role,items]=await Promise.all([
       c.rpc('startup_leaderboard'),
       userId?c.rpc('is_startup_moderator'):Promise.resolve({data:false,error:null}),
-      userId?c.from('startup_submissions').select('id,name,website,pitch,story,category,city,stage,founded_year,founder,status,review_note,created_at').order('created_at',{ascending:false}):Promise.resolve({data:[],error:null}),
+      userId?c.from('startup_submissions').select('id,name,website,pitch,story,category,city,stage,founded_year,founder,status,review_note,created_at,logo_path').order('created_at',{ascending:false}):Promise.resolve({data:[],error:null}),
     ]);
     if(run!==generation.current)return;
     if(board.error||role.error||items.error){setError('The startup service is unavailable. Please retry.');setStatus('error');return}
