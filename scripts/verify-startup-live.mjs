@@ -49,6 +49,7 @@ try{
  await role('authenticated',moderator);
  const overview=(await client.query('select public.startup_admin_dashboard() as data')).rows[0].data;
  assert.ok(Number(overview.accounts)>=3);
+ assert.equal(overview.items.find(item=>item.id===id).owner_email,`startup-test-${founder}@example.invalid`);
  await client.query('select public.startup_admin_trash($1,false)',[id]);
  await role('anon',null);
  assert.equal((await client.query('select * from public.startups where id=$1',[id])).rowCount,0);

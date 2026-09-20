@@ -13,10 +13,10 @@ async function denied(role,user,sql,params=[]){await assert.rejects(as(role,user
 const payload={name:'Test Startup',website:'https://startup.example',pitch:'A useful product for South African founders.',story:'A long enough description of a new South African startup created only inside this disposable test database.',category:'SaaS',city:'Cape Town',stage:'Launched',year:2026,founder:'Test Founder'};
 try{
  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
- create schema auth; create table auth.users(id uuid primary key,email_confirmed_at timestamptz);
+ create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  grant usage on schema auth,public to anon,authenticated,service_role;
- insert into auth.users values('${founder}',now()),('${other}',now()),('${moderator}',now()),('${unverified}',null);`);
+ insert into auth.users values('${founder}','founder@example.invalid',now()),('${other}','other@example.invalid',now()),('${moderator}','moderator@example.invalid',now()),('${unverified}','unverified@example.invalid',null);`);
  await db.exec(await readFile(new URL('../supabase/migrations/202609130001_startup_sa.sql',import.meta.url),'utf8'));
  await db.exec('create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]); create table storage.objects(bucket_id text,name text,user_metadata jsonb);');
  await db.exec(await readFile(new URL('../supabase/migrations/202609150001_logos_notifications.sql',import.meta.url),'utf8'));
@@ -94,6 +94,7 @@ try{
  await denied('service_role',null,'select public.set_startup_browser_vote($1,$2,$3,true,null)',[submission,'d'.repeat(64),ip]);
  console.log('PASS: guest vote uniqueness, browser isolation, legacy transfer, vote removal, original dates, rate limiting and hidden-listing protection.');
  await db.exec(await readFile(new URL('../supabase/migrations/202609200002_admin_dashboard.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../supabase/migrations/202609200003_admin_submission_emails.sql',import.meta.url),'utf8'));
  await denied('anon',null,'select public.startup_admin_dashboard()');
  await denied('authenticated',founder,'select public.startup_admin_dashboard()');
  await denied('authenticated',founder,'select public.startup_admin_trash($1,false)',[logoId]);
@@ -102,6 +103,7 @@ try{
  assert.equal(Number(dashboard.verifiedAccounts),3);
  assert.ok(dashboard.items.length>=3);
  assert.ok(dashboard.items.every(i=>!('owner_id' in i)));
+ assert.equal(dashboard.items.find(i=>i.id===submission).owner_email,'founder@example.invalid');
  await as('authenticated',moderator,()=>db.query('select public.startup_admin_trash($1,false)',[logoId]));
  assert.equal((await db.query('select hidden from public.startups where id=$1',[logoId])).rows[0].hidden,true);
  await denied('service_role',null,'select public.set_startup_browser_vote($1,$2,$3,true,null)',[logoId,'e'.repeat(64),ip]);
