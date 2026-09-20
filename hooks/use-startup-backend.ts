@@ -15,7 +15,7 @@ export function useStartupBackend(){
   const refresh=useCallback(async(c:SupabaseClient,userId?:string)=>{
     const run=++generation.current;
     const [board,role,items]=await Promise.all([
-      c.rpc('startup_leaderboard'),
+      (async()=>{try{const {data:auth}=await c.auth.getSession();const r=await fetch('/api/leaderboard',{cache:'no-store',headers:auth.session?{Authorization:`Bearer ${auth.session.access_token}`}:{}});const result=await r.json() as {records?:StartupRecord[]};return {data:result.records??[],error:!r.ok}}catch{return {data:[],error:true}}})(),
       userId?c.rpc('is_startup_moderator'):Promise.resolve({data:false,error:null}),
       userId?c.from('startup_submissions').select('id,name,website,pitch,story,category,city,stage,founded_year,founder,status,review_note,created_at,logo_path').order('created_at',{ascending:false}):Promise.resolve({data:[],error:null}),
     ]);
@@ -30,5 +30,11 @@ export function useStartupBackend(){
     }).catch(()=>{if(!cancelled){setError('Could not reach the startup service. Please reload to retry.');setStatus('error')}});
     return()=>{cancelled=true;generation.current++;unsubscribe?.()};
   },[refresh]);
-  return {client,status,session,records,submissions,moderator,error,reload:()=>client?refresh(client,session?.user.id):Promise.resolve()};
+  async function vote(id:string,active:boolean){
+    if(!client)throw new Error('Voting is unavailable.');
+    const {data:auth}=await client.auth.getSession();
+    const r=await fetch('/api/votes',{method:'POST',headers:{'Content-Type':'application/json',...(auth.session?{Authorization:`Bearer ${auth.session.access_token}`}:{})},body:JSON.stringify({target_id:id,desired_active:active})});
+    const result=await r.json() as {error?:string};if(!r.ok)throw new Error(result.error||'Could not save your vote.');await refresh(client,auth.session?.user.id);
+  }
+  return {client,status,session,records,submissions,moderator,error,vote,reload:()=>client?refresh(client,session?.user.id):Promise.resolve()};
 }

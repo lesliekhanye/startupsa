@@ -34,6 +34,15 @@ try{
  await denied('select public.set_startup_vote($1,true)',[id]);
  const anonymous=(await client.query('select public.startup_leaderboard() as board')).rows[0].board.find(s=>s.id===id);
  assert.equal(anonymous.total_votes,1);assert.equal(anonymous.my_vote,false);
+ await role('service_role',null);
+ const browser='e'.repeat(64),ip='f'.repeat(64);
+ await client.query('select public.set_startup_browser_vote($1,$2,$3,true,$4)',[id,browser,ip,founder]);
+ await client.query('select public.set_startup_browser_vote($1,$2,$3,true,$4)',[id,browser,ip,founder]);
+ let guest=(await client.query('select public.startup_browser_board($1,null) as board',[browser])).rows[0].board.find(s=>s.id===id);
+ assert.equal(guest.total_votes,1);assert.equal(guest.my_vote,true);
+ await client.query('select public.set_startup_browser_vote($1,$2,$3,false,null)',[id,browser,ip]);
+ guest=(await client.query('select public.startup_browser_board($1,null) as board',[browser])).rows[0].board.find(s=>s.id===id);
+ assert.equal(guest.total_votes,0);assert.equal(guest.my_vote,false);
  console.log('PASS: live Supabase submission, approval, vote uniqueness and row permissions.');
 }catch(error){console.error('Verification failed:',error.code||'',String(error.message).replaceAll(e.DATABASE_URL,'[redacted]'));process.exitCode=1}
 finally{try{await client.query('rollback');console.log('Rolled back all temporary users, submissions and votes; no emails sent.')}finally{await client.end()}}

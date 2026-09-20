@@ -72,4 +72,25 @@ try{
  await as('authenticated',moderator,()=>db.query('select public.review_startup($1,$2,$3)',[logoId,'approved','']));
  assert.equal((await db.query('select logo_path from public.startups where id=$1',[logoId])).rows[0].logo_path,logoId+'.png');
  console.log('PASS: private logo ownership validation, logo publication and exactly-once notification queuing.');
+ await db.exec(await readFile(new URL('../supabase/migrations/202609200001_guest_votes.sql',import.meta.url),'utf8'));
+ const browser='a'.repeat(64),ip='b'.repeat(64),secondBrowser='c'.repeat(64);
+ const guestVote=(active,who=browser,legacy=null)=>as('service_role',null,()=>db.query('select public.set_startup_browser_vote($1,$2,$3,$4,$5)',[submission,who,ip,active,legacy]));
+ const guestBoard=async who=>(await as('service_role',null,()=>db.query('select public.startup_browser_board($1,null) as board',[who]))).rows[0].board.find(s=>s.id===submission);
+ await denied('anon',null,'select public.set_startup_browser_vote($1,$2,$3,true,null)',[submission,browser,ip]);
+ await denied('authenticated',founder,'select * from public.startup_guest_votes');
+ await guestVote(true,browser,founder);
+ await guestVote(true,browser,founder);
+ assert.equal((await guestBoard(browser)).total_votes,1,'legacy account vote transfers without double-counting');
+ assert.equal((await guestBoard(browser)).my_vote,true);
+ assert.equal((await guestBoard(secondBrowser)).my_vote,false,'another browser cannot see vote identity');
+ const guestDate=(await db.query('select created_at from public.startup_guest_votes')).rows[0].created_at;
+ await guestVote(false);assert.equal((await guestBoard(browser)).total_votes,0);
+ await guestVote(true);assert.deepEqual((await db.query('select created_at from public.startup_guest_votes')).rows[0].created_at,guestDate);
+ await guestVote(true,secondBrowser);assert.equal((await guestBoard(browser)).total_votes,2);
+ await db.query("update startup_private.vote_limits set hits=60 where key=$1",['browser:'+browser]);
+ await denied('service_role',null,'select public.set_startup_browser_vote($1,$2,$3,false,null)',[submission,browser,ip]);
+ assert.equal((await guestBoard(browser)).total_votes,2,'rate-limited writes do not mutate counts');
+ await db.query('update public.startups set hidden=true where id=$1',[submission]);
+ await denied('service_role',null,'select public.set_startup_browser_vote($1,$2,$3,true,null)',[submission,'d'.repeat(64),ip]);
+ console.log('PASS: guest vote uniqueness, browser isolation, legacy transfer, vote removal, original dates, rate limiting and hidden-listing protection.');
 }finally{await db.close()}

@@ -1,0 +1,16 @@
+import {readFileSync} from 'node:fs';
+import ts from 'typescript';
+import vm from 'node:vm';
+import {webcrypto} from 'node:crypto';
+import assert from 'node:assert/strict';
+const source=ts.transpileModule(readFileSync('lib/guest-voting.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const exports={};vm.runInNewContext(source,{exports,require:name=>name==='cloudflare:workers'?{env:{SUPABASE_SERVICE_ROLE_KEY:'test-signing-key'}}:{},crypto:webcrypto,TextEncoder,Uint8Array,URL});
+const first=await exports.browserIdentity(new Request('https://startup.example'),true);
+assert.match(first.cookie,/HttpOnly/);assert.match(first.cookie,/SameSite=Lax/);assert.match(first.cookie,/Secure/);
+const cookie=first.cookie.split(';')[0];
+const second=await exports.browserIdentity(new Request('https://startup.example',{headers:{Cookie:cookie}}));
+assert.equal(first.browserKey,second.browserKey);
+await assert.rejects(()=>exports.browserIdentity(new Request('https://startup.example')));
+await assert.rejects(()=>exports.browserIdentity(new Request('https://startup.example',{headers:{Cookie:cookie.slice(0,-1)+(cookie.endsWith('0')?'1':'0')}})));
+assert.equal((await exports.browserIdentity(new Request('http://localhost:5173'),true)).cookie.includes('Secure'),false);
+console.log('PASS: signed browser cookie, reuse, tampering rejection, missing-cookie rejection and secure production flags.');
