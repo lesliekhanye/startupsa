@@ -31,9 +31,9 @@ export async function deliverNotifications(admin:ReturnType<typeof adminClient>,
   const {data:claimed,error:claimError}=await admin.from('startup_email_outbox').update({retry_after:new Date(Date.now()+120000).toISOString(),attempts:job.attempts+1}).eq('id',job.id).is('sent_at',null).lte('retry_after',now).select('id');
   if(claimError){pending=true;continue}if(!claimed?.length)continue;
   try{
-   const [{data:item,error:itemError},{data:account,error:accountError}]=await Promise.all([admin.from('startup_submissions').select('name').eq('id',job.submission_id).single(),admin.auth.admin.getUserById(job.owner_id)]);
+   const [{data:item,error:itemError},{data:account,error:accountError}]=await Promise.all([admin.from('startup_submissions').select('name,deleted_at').eq('id',job.submission_id).single(),admin.auth.admin.getUserById(job.owner_id)]);
    if(itemError||accountError||!item||!account.user?.email||!account.user.email_confirmed_at)throw new Error('Recipient unavailable');
-   const approved=job.event==='approved';
+   if(item.deleted_at){pending=true;continue}const approved=job.event==='approved';
    const sent=await fetch('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(15000),headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':`startup-sa-${job.id}`},body:JSON.stringify({from:env.RESEND_FROM_EMAIL,to:[account.user.email],subject:approved?'Your startup has been approved — Startup SA':'Submission received — Startup SA',text:approved?`Good news! ${item.name} has been approved and is now listed on Startup SA.\n\nOpen Startup SA and find your startup on the leaderboard.\n\nThanks for sharing what you’re building.\nThe Startup SA team`:`We’ve received ${item.name} and it is now awaiting review.\n\nWe’ll email you again once it is approved. You can check the status in My account on Startup SA.\n\nThe Startup SA team`})});
    if(!sent.ok)throw new Error('Email provider unavailable');
    const {error:saveError}=await admin.from('startup_email_outbox').update({sent_at:new Date().toISOString()}).eq('id',job.id);if(saveError)pending=true;

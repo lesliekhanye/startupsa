@@ -43,6 +43,19 @@ try{
  await client.query('select public.set_startup_browser_vote($1,$2,$3,false,null)',[id,browser,ip]);
  guest=(await client.query('select public.startup_browser_board($1,null) as board',[browser])).rows[0].board.find(s=>s.id===id);
  assert.equal(guest.total_votes,0);assert.equal(guest.my_vote,false);
- console.log('PASS: live Supabase submission, approval, vote uniqueness and row permissions.');
+ await role('authenticated',other);
+ await denied('select public.startup_admin_dashboard()',[]);
+ await denied('select public.startup_admin_trash($1,false)',[id]);
+ await role('authenticated',moderator);
+ const overview=(await client.query('select public.startup_admin_dashboard() as data')).rows[0].data;
+ assert.ok(Number(overview.accounts)>=3);
+ await client.query('select public.startup_admin_trash($1,false)',[id]);
+ await role('anon',null);
+ assert.equal((await client.query('select * from public.startups where id=$1',[id])).rowCount,0);
+ await role('authenticated',moderator);
+ await client.query('select public.startup_admin_trash($1,true)',[id]);
+ await role('anon',null);
+ assert.equal((await client.query('select * from public.startups where id=$1',[id])).rowCount,1);
+ console.log('PASS: live Supabase submission, approval, votes, admin counts, permission guards and Trash/restore.');
 }catch(error){console.error('Verification failed:',error.code||'',String(error.message).replaceAll(e.DATABASE_URL,'[redacted]'));process.exitCode=1}
 finally{try{await client.query('rollback');console.log('Rolled back all temporary users, submissions and votes; no emails sent.')}finally{await client.end()}}
