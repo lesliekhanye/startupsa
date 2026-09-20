@@ -95,6 +95,7 @@ try{
  console.log('PASS: guest vote uniqueness, browser isolation, legacy transfer, vote removal, original dates, rate limiting and hidden-listing protection.');
  await db.exec(await readFile(new URL('../supabase/migrations/202609200002_admin_dashboard.sql',import.meta.url),'utf8'));
  await db.exec(await readFile(new URL('../supabase/migrations/202609200003_admin_submission_emails.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../supabase/migrations/202609200004_owner_startup_edits.sql',import.meta.url),'utf8'));
  await denied('anon',null,'select public.startup_admin_dashboard()');
  await denied('authenticated',founder,'select public.startup_admin_dashboard()');
  await denied('authenticated',founder,'select public.startup_admin_trash($1,false)',[logoId]);
@@ -122,5 +123,16 @@ try{
  assert.equal((await db.query('select * from public.startups where id=$1',[pendingId])).rows.length,0,'trashed review rolls back publication');
  await as('authenticated',moderator,()=>db.query('select public.startup_admin_trash($1,true)',[pendingId]));
  await as('authenticated',moderator,()=>db.query('select public.review_startup($1,$2,$3)',[pendingId,'approved','']));
+ const changed={...payload,name:'Test Startup Updated',website:'https://startup-updated.example',stage:'Growing',pitch:'An updated pitch for a growing South African startup.'};
+ await denied('authenticated',other,'select public.edit_startup_submission($1,$2)',[submission,changed]);
+ await denied('anon',null,'select public.edit_startup_submission($1,$2)',[submission,changed]);
+ await as('authenticated',founder,()=>db.query('select public.edit_startup_submission($1,$2)',[submission,changed]));
+ assert.equal((await db.query('select status from public.startup_submissions where id=$1',[submission])).rows[0].status,'pending');
+ assert.equal((await db.query('select name from public.startups where id=$1',[submission])).rows[0].name,'Test Startup','existing public version stays live during review');
+ const stableSlug=(await db.query('select slug from public.startups where id=$1',[submission])).rows[0].slug;
+ await as('authenticated',moderator,()=>db.query('select public.review_startup($1,$2,$3)',[submission,'approved','Updated listing checked']));
+ const updated=(await db.query('select name,website,stage,slug,hidden from public.startups where id=$1',[submission])).rows[0];
+ assert.equal(updated.name,'Test Startup Updated');assert.equal(updated.website,'https://startup-updated.example');assert.equal(updated.stage,'Growing');assert.equal(updated.slug,stableSlug);assert.equal(updated.hidden,true,'owner edits do not override admin visibility');
+ await denied('authenticated',founder,'select public.edit_startup_submission($1,$2)',[logoId,{...changed,website:'javascript:alert(1)'}]);
  console.log('PASS: all-account counts, admin authorization, recoverable deletion, blocked trashed review, vote preservation and prior visibility restoration.');
 }finally{await db.close()}

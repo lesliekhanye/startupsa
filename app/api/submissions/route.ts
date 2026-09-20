@@ -30,3 +30,7 @@ export async function POST(request:Request){
   return response({id,emailPending:delivery.pending});
  }catch(e){return response({error:e instanceof z.ZodError?'Please check the submission details.':e instanceof Error?e.message:'Could not save your submission. Please retry.'},400)}
 }
+export async function PATCH(request:Request){
+ let auth;try{auth=await authenticate(request)}catch{return response({error:'Please sign in with a verified email.'},401)}
+ try{const input=z.object({submission_id:z.string().uuid(),payload:submissionSchema}).parse(JSON.parse(new TextDecoder().decode(await boundedBody(request,12000))));const {error}=await auth.client.rpc('edit_startup_submission',input);if(error)return response({error:error.message},400);return response({saved:true})}catch(error){return response({error:error instanceof z.ZodError?'Please check the startup details.':error instanceof Error?error.message:'Could not save your changes.'},400)}
+}

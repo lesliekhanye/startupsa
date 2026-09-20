@@ -50,6 +50,16 @@ try{
  const overview=(await client.query('select public.startup_admin_dashboard() as data')).rows[0].data;
  assert.ok(Number(overview.accounts)>=3);
  assert.equal(overview.items.find(item=>item.id===id).owner_email,`startup-test-${founder}@example.invalid`);
+ await role('authenticated',other);
+ await denied('select public.edit_startup_submission($1,$2)',[id,payload]);
+ await role('authenticated',founder);
+ const changed={...payload,name:'Transactional verification updated',stage:'Growing',website:`https://updated-${id}.example.invalid`};
+ await client.query('select public.edit_startup_submission($1,$2)',[id,changed]);
+ assert.equal((await client.query('select status from public.startup_submissions where id=$1',[id])).rows[0].status,'pending');
+ assert.equal((await client.query('select name from public.startups where id=$1',[id])).rows[0].name,'Transactional verification');
+ await role('authenticated',moderator);
+ await client.query('select public.review_startup($1,$2,$3)',[id,'approved','Updated listing checked']);
+ assert.equal((await client.query('select name from public.startups where id=$1',[id])).rows[0].name,'Transactional verification updated');
  await client.query('select public.startup_admin_trash($1,false)',[id]);
  await role('anon',null);
  assert.equal((await client.query('select * from public.startups where id=$1',[id])).rowCount,0);
