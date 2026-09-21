@@ -2,17 +2,27 @@
 
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {Session,SupabaseClient} from '@supabase/supabase-js';
-import {Building2,CheckCircle2,Clock3,ExternalLink,Inbox,LayoutDashboard,LogOut,Mail,RefreshCw,RotateCcw,Search,ShieldCheck,Trash2,UserRound,Users} from 'lucide-react';
+import {ArrowRight,Building2,CheckCircle2,Clock3,ExternalLink,Inbox,LayoutDashboard,LogOut,Mail,RefreshCw,RotateCcw,Search,ShieldCheck,Trash2,UserRound,Users} from 'lucide-react';
 import {getSupabase} from '@/lib/supabase';
 import {SignInDialog} from '@/components/startup-account';
 import type {SubmissionRecord} from '@/lib/startup-schema';
 import {AlertDialog,AlertDialogAction,AlertDialogCancel,AlertDialogContent,AlertDialogDescription,AlertDialogFooter,AlertDialogHeader,AlertDialogTitle} from '@/components/ui/alert-dialog';
 import {Sidebar,SidebarContent,SidebarFooter,SidebarGroup,SidebarGroupContent,SidebarGroupLabel,SidebarHeader,SidebarInset,SidebarMenu,SidebarMenuBadge,SidebarMenuButton,SidebarMenuItem,SidebarProvider,SidebarTrigger} from '@/components/ui/sidebar';
 
-type Item=SubmissionRecord&{deleted_at:string|null;owner_email:string|null;is_update:boolean;has_pending_changes:boolean};
+type PublishedVersion={name:string;website:string;pitch:string;story:string;category:string;city:string;stage:string;founded_year:number;founder:string;logo_path:string|null};
+type Item=SubmissionRecord&{deleted_at:string|null;owner_email:string|null;is_update:boolean;has_pending_changes:boolean;published_version:PublishedVersion|null};
 type Dashboard={accounts:number;verifiedAccounts:number;items:Item[]};
 type Filter='pending'|'approved'|'rejected'|'all'|'trash';
 const filterLabels:Record<Filter,string>={pending:'Awaiting review',approved:'Approved',rejected:'Rejected',all:'All submissions',trash:'Trash'};
+type ChangeKey=keyof PublishedVersion;
+const changeFields:Array<{key:ChangeKey;label:string}>=[{key:'name',label:'Startup name'},{key:'website',label:'Website'},{key:'pitch',label:'Pitch'},{key:'story',label:'Story'},{key:'category',label:'Category'},{key:'city',label:'Location'},{key:'stage',label:'Stage'},{key:'founded_year',label:'Founded year'},{key:'founder',label:'Founder'},{key:'logo_path',label:'Logo'}];
+function changeValue(key:ChangeKey,value:string|number|null|undefined,proposed=false){if(key==='logo_path')return value?(proposed?'Replacement logo':'Current logo'):'No logo';return value===null||value===undefined||value===''?'Not provided':String(value)}
+function ChangeSummary({item}:{item:Item}){
+ if(!item.published_version)return null;
+ const changes=changeFields.flatMap(field=>{const before=item.published_version?.[field.key],after=item[field.key];return (before??null)===(after??null)?[]:[{...field,before:changeValue(field.key,before),after:changeValue(field.key,after,true)}]});
+ if(!changes.length)return <section className="admin-change-panel"><div className="admin-change-heading"><div><strong>No field differences found</strong><span>The submitted values match the published listing.</span></div></div></section>;
+ return <section className="admin-change-panel" aria-label="Changes awaiting approval"><div className="admin-change-heading"><div><strong>Changes awaiting approval</strong><span>Compare the live value with the founder’s proposed value.</span></div><b>{changes.length} {changes.length===1?'field':'fields'} changed</b></div><div className="admin-change-list">{changes.map(change=><article key={change.key} className={`admin-change-row ${change.key==='pitch'||change.key==='story'?'long':''}`}><h4>{change.label}</h4><div className="admin-change-value before"><span>Currently live</span><p>{change.before}</p></div><ArrowRight/><div className="admin-change-value after"><span>Proposed</span><p>{change.after}</p></div></article>)}</div></section>;
+}
 
 export function AdminDashboard(){
  const [client,setClient]=useState<SupabaseClient|null>(null),[session,setSession]=useState<Session|null>(null),[ready,setReady]=useState(false),[signIn,setSignIn]=useState(false),[data,setData]=useState<Dashboard|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[filter,setFilter]=useState<Filter>('pending'),[search,setSearch]=useState(''),[page,setPage]=useState(1),[notes,setNotes]=useState<Record<string,string>>({}),[trash,setTrash]=useState<Item|null>(null),[lastUpdated,setLastUpdated]=useState<Date|null>(null);
@@ -55,7 +65,7 @@ export function AdminDashboard(){
       <div className="admin-filters"><div className="admin-filter-tabs" role="group" aria-label="Filter submissions">{(['pending','approved','rejected','all','trash'] as Filter[]).map(value=><button key={value} className={filter===value?'active':''} onClick={()=>chooseFilter(value)}>{filterLabels[value]}</button>)}</div><label className="admin-search"><Search/><span className="sr-only">Search submissions</span><input type="search" placeholder="Search startup, founder or city" value={search} onChange={event=>{setSearch(event.target.value);setPage(1)}}/></label><span className="admin-result-count">{items.length} {items.length===1?'result':'results'}</span></div>
       <div className="admin-submission-list">{!items.length?<div className="admin-empty"><Inbox/><h3>Nothing here right now</h3><p>No submissions match this view or search.</p></div>:items.slice((currentPage-1)*12,currentPage*12).map(item=><article className="admin-item" key={item.id}>
        <div className="admin-item-heading"><div className="admin-startup-identity"><span>{item.name.slice(0,2).toUpperCase()}</span><div><h3>{item.name}</h3><p>{item.pitch}</p></div></div><span className={`status-badge ${item.status}`}>{item.deleted_at?'In Trash':item.status==='pending'&&item.is_update?'Update pending':item.status}</span></div>
-       {item.status==='pending'&&item.is_update&&!item.deleted_at&&<p className="admin-update-note"><RefreshCw/>Edited listing—the previous approved version stays live until these changes are approved.</p>}
+       {item.status==='pending'&&item.is_update&&!item.deleted_at&&<><p className="admin-update-note"><RefreshCw/>Edited listing—the previous approved version stays live until these changes are approved.</p><ChangeSummary item={item}/></>}
        <div className="admin-meta-grid"><div><span>Registered by</span><strong>{item.owner_email||'Email unavailable'}</strong></div><div><span>Founder</span><strong>{item.founder}</strong></div><div><span>Location</span><strong>{item.city}</strong></div><div><span>Category</span><strong>{item.category}</strong></div><div><span>Stage</span><strong>{item.stage}</strong></div><div><span>Submitted</span><strong>{new Date(item.created_at).toLocaleDateString()}</strong></div></div>
        <details className="admin-details"><summary>View full submission</summary><div><p className="admin-story">{item.story}</p><p>Founded {item.founded_year}</p>{/^https?:\/\//.test(item.website)&&<a href={item.website} target="_blank" rel="noopener noreferrer">Visit website <ExternalLink/></a>}{item.review_note&&<p><strong>Review note:</strong> {item.review_note}</p>}</div></details>
        {!item.deleted_at&&item.status==='pending'&&<label className="admin-note">Review note <span>Required when rejecting</span><textarea maxLength={1000} value={notes[item.id]??''} onChange={event=>setNotes({...notes,[item.id]:event.target.value})} placeholder="Add clear feedback for the founder…"/></label>}

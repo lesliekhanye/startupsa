@@ -98,6 +98,7 @@ try{
  await db.exec(await readFile(new URL('../supabase/migrations/202609200004_owner_startup_edits.sql',import.meta.url),'utf8'));
  await db.exec(await readFile(new URL('../supabase/migrations/202609210001_owner_logo_edits.sql',import.meta.url),'utf8'));
  await db.exec(await readFile(new URL('../supabase/migrations/202609210002_admin_pending_updates.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../supabase/migrations/202609210003_admin_change_details.sql',import.meta.url),'utf8'));
  await denied('anon',null,'select public.startup_admin_dashboard()');
  await denied('authenticated',founder,'select public.startup_admin_dashboard()');
  await denied('authenticated',founder,'select public.startup_admin_trash($1,false)',[logoId]);
@@ -134,6 +135,8 @@ try{
  const pendingUpdate=(await as('authenticated',moderator,()=>db.query('select public.startup_admin_dashboard() as data'))).rows[0].data.items.find(i=>i.id===submission);
  assert.equal(pendingUpdate.is_update,true,'admin queue identifies edits to published startups');
  assert.equal(pendingUpdate.has_pending_changes,true,'admin queue identifies unpublished changes');
+ assert.equal(pendingUpdate.published_version.name,'Test Startup','admin queue includes the currently published values');
+ assert.equal(pendingUpdate.published_version.stage,'Launched','admin can compare the previous stage');
  const stableSlug=(await db.query('select slug from public.startups where id=$1',[submission])).rows[0].slug;
  await as('authenticated',moderator,()=>db.query('select public.review_startup($1,$2,$3)',[submission,'approved','Updated listing checked']));
  const updated=(await db.query('select name,website,stage,slug,hidden from public.startups where id=$1',[submission])).rows[0];
