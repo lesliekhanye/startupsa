@@ -58,6 +58,9 @@ try{
  assert.equal((await client.query('select status from public.startup_submissions where id=$1',[id])).rows[0].status,'pending');
  assert.equal((await client.query('select name from public.startups where id=$1',[id])).rows[0].name,'Transactional verification');
  await role('authenticated',moderator);
+ const pendingUpdate=(await client.query('select public.startup_admin_dashboard() as data')).rows[0].data.items.find(item=>item.id===id);
+ assert.equal(pendingUpdate.is_update,true);
+ assert.equal(pendingUpdate.has_pending_changes,true);
  await client.query('select public.review_startup($1,$2,$3)',[id,'approved','Updated listing checked']);
  assert.equal((await client.query('select name from public.startups where id=$1',[id])).rows[0].name,'Transactional verification updated');
  await client.query('select public.startup_admin_trash($1,false)',[id]);
