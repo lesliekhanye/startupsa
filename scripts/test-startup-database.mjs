@@ -96,6 +96,7 @@ try{
  await db.exec(await readFile(new URL('../supabase/migrations/202609200002_admin_dashboard.sql',import.meta.url),'utf8'));
  await db.exec(await readFile(new URL('../supabase/migrations/202609200003_admin_submission_emails.sql',import.meta.url),'utf8'));
  await db.exec(await readFile(new URL('../supabase/migrations/202609200004_owner_startup_edits.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../supabase/migrations/202609210001_owner_logo_edits.sql',import.meta.url),'utf8'));
  await denied('anon',null,'select public.startup_admin_dashboard()');
  await denied('authenticated',founder,'select public.startup_admin_dashboard()');
  await denied('authenticated',founder,'select public.startup_admin_trash($1,false)',[logoId]);
@@ -134,5 +135,13 @@ try{
  const updated=(await db.query('select name,website,stage,slug,hidden from public.startups where id=$1',[submission])).rows[0];
  assert.equal(updated.name,'Test Startup Updated');assert.equal(updated.website,'https://startup-updated.example');assert.equal(updated.stage,'Growing');assert.equal(updated.slug,stableSlug);assert.equal(updated.hidden,true,'owner edits do not override admin visibility');
  await denied('authenticated',founder,'select public.edit_startup_submission($1,$2)',[logoId,{...changed,website:'javascript:alert(1)'}]);
+ const replacementLogo=`${logoId}/30000000-0000-4000-8000-000000000001.png`;
+ await db.query('insert into storage.objects values($1,$2,$3)',['startup-sa-logos',replacementLogo,{owner:founder}]);
+ await denied('authenticated',other,'select public.edit_startup_submission($1,$2,$3)',[logoId,logoPayload,replacementLogo]);
+ await as('authenticated',founder,()=>db.query('select public.edit_startup_submission($1,$2,$3)',[logoId,logoPayload,replacementLogo]));
+ assert.equal((await db.query('select logo_path from public.startup_submissions where id=$1',[logoId])).rows[0].logo_path,replacementLogo);
+ assert.equal((await db.query('select logo_path from public.startups where id=$1',[logoId])).rows[0].logo_path,logoId+'.png','old approved logo stays live during review');
+ await as('authenticated',moderator,()=>db.query('select public.review_startup($1,$2,$3)',[logoId,'approved','Replacement logo checked']));
+ assert.equal((await db.query('select logo_path from public.startups where id=$1',[logoId])).rows[0].logo_path,replacementLogo,'approved replacement becomes public');
  console.log('PASS: all-account counts, admin authorization, recoverable deletion, blocked trashed review, vote preservation and prior visibility restoration.');
 }finally{await db.close()}
