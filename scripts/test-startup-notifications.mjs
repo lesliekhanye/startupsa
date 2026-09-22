@@ -17,10 +17,11 @@ class Query{
 const admin={from:table=>new Query(table),auth:{admin:{getUserById:async id=>({data:{user:{id,email:'founder@example.invalid',email_confirmed_at:'2026-01-01'}},error:null})}}};
 const source=readFileSync(new URL('../lib/startup-server.ts',import.meta.url),'utf8');
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const emailExports={};vm.runInNewContext(ts.transpileModule(readFileSync('lib/email-templates.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:emailExports,URL});
 const exports={};
-vm.runInNewContext(compiled,{exports,require:name=>name==='cloudflare:workers'?{env:{RESEND_API_KEY:'test-only',RESEND_FROM_EMAIL:'test@example.invalid'}}:{createClient:()=>{throw new Error('No network client allowed')}},Response,Uint8Array,Date,AbortSignal,fetch:async(url,options)=>{assert.equal(url,'https://api.resend.com/emails');sent.push(JSON.parse(options.body));assert.ok(options.headers['Idempotency-Key']);return {ok:!fail}}});
+vm.runInNewContext(compiled,{exports,require:name=>name==='./email-templates'?emailExports:name==='cloudflare:workers'?{env:{RESEND_API_KEY:'test-only',RESEND_FROM_EMAIL:'test@example.invalid'}}:{createClient:()=>{throw new Error('No network client allowed')}},Response,Uint8Array,Date,AbortSignal,fetch:async(url,options)=>{assert.equal(url,'https://api.resend.com/emails');sent.push(JSON.parse(options.body));assert.ok(options.headers['Idempotency-Key']);return {ok:!fail}}});
 let result=await exports.deliverNotifications(admin,'founder-1');assert.equal(result.pending,false);assert.equal(sent.length,2);
-assert.match(sent[0].subject,/Submission received/);assert.match(sent[1].subject,/approved/);sent.forEach(x=>assert.deepEqual(x.to,['founder@example.invalid']));
+assert.match(sent[0].subject,/Submission received/);assert.match(sent[1].subject,/approved/);sent.forEach(x=>{assert.deepEqual(x.to,['founder@example.invalid']);assert.ok(x.html.includes('prefers-color-scheme:dark'));assert.ok(x.text)});
 await exports.deliverNotifications(admin,'founder-1');assert.equal(sent.length,2,'saved sent markers prevent duplicate emails');
 events[0].sent_at=null;events[0].retry_after=new Date(0).toISOString();fail=true;
 result=await exports.deliverNotifications(admin,'founder-1');assert.equal(result.pending,true);assert.equal(events[0].sent_at,null);

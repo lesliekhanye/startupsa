@@ -1,14 +1,15 @@
 "use client";
+import Image from "next/image";
 import {useEffect,useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 export function StartupLogo({id,name,hasLogo,client}:{id?:string;name:string;hasLogo?:boolean;client?:SupabaseClient|null}){
  const [src,setSrc]=useState<string|null>(null),[failed,setFailed]=useState(false);
- useEffect(()=>{setFailed(false);if(!id||!hasLogo)return;let cancelled=false,url:string|undefined;
-  if(!client){setSrc(`/api/logos/${id}`);return}
+ useEffect(()=>{if(!id||!hasLogo)return;let cancelled=false,url:string|undefined;queueMicrotask(()=>{if(!cancelled)setFailed(false)});
+  if(!client){queueMicrotask(()=>{if(!cancelled)setSrc(`/api/logos/${id}`)});return()=>{cancelled=true}}
   void (async()=>{const {data}=await client.auth.getSession();const r=await fetch(`/api/logos/${id}`,{headers:data.session?{Authorization:`Bearer ${data.session.access_token}`}:{}});if(!r.ok)throw new Error();const blob=await r.blob();if(cancelled)return;url=URL.createObjectURL(blob);setSrc(url)})().catch(()=>{if(!cancelled)setFailed(true)});
   return()=>{cancelled=true;if(url)URL.revokeObjectURL(url)};
  },[id,hasLogo,client]);
- return src&&hasLogo&&!failed?<img className="startup-logo" src={src} alt={`${name} logo`} onError={()=>setFailed(true)}/>:<>{name.slice(0,2)}</>;
+ return src&&hasLogo&&!failed?<Image unoptimized width={112} height={112} loading="lazy" decoding="async" className="startup-logo" src={src} alt={`${name} logo`} onError={()=>setFailed(true)}/>:<>{name.slice(0,2)}</>;
 }
 export async function prepareLogo(file:File){
  if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>5*1024*1024)throw new Error('Choose a PNG, JPEG or WebP image up to 5 MB.');

@@ -8,5 +8,6 @@ export async function GET(){
   if(key?.startsWith('eyJ')){try{const payload=key.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');validKey=JSON.parse(atob(payload)).role==='anon'}catch{validKey=false}}
   let validUrl=false;
   try{const parsed=new URL(url||'');validUrl=parsed.protocol==='https:'&&!parsed.username&&!parsed.password&&parsed.pathname==='/'&&!parsed.search&&!parsed.hash}catch{}
+  if(!(url&&key&&validKey&&validUrl)&&process.env.NODE_ENV==='production')return Response.json({error:'Startup service unavailable.'},{status:503,headers:{'Cache-Control':'no-store'}});
   return Response.json(url&&key&&validKey&&validUrl?{configured:true,url,key}:{configured:false},{headers:{'Cache-Control':'no-store'}});
 }

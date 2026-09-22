@@ -1,0 +1,8 @@
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import ts from 'typescript';
+import vm from 'node:vm';
+const exports={};vm.runInNewContext(ts.transpileModule(readFileSync('lib/email-templates.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,URL});
+mkdirSync('outputs/email-previews',{recursive:true});
+for(const kind of ['signin','submitted','approved'])for(const mode of ['light','dark']){let {html}=exports.renderEmail(kind,kind==='signin'?'482 916':'Your startup','https://startups.summit88.co.za');html=html.replace('@media(prefers-color-scheme:dark)',mode==='dark'?'@media(min-width:0px)':'@media not all');writeFileSync(`outputs/email-previews/${kind}-${mode}.html`,html)}
+writeFileSync('outputs/email-previews/index.html','<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Startup SA email previews</title><style>body{background:#eeeeee;color:#0a0a0a;font:16px Arial;margin:clamp(12px,3vw,32px)}h1{letter-spacing:-1px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px}iframe{box-sizing:border-box;width:100%;height:850px;border:1px solid #d4d4d4;border-radius:16px;background:white}a{color:#171717}</style><h1>Startup SA · Email templates</h1><p>Responsive HTML with plain-text alternatives. Dark previews simulate supporting email clients.</p><div class="grid">'+['signin','submitted','approved'].flatMap(kind=>['light','dark'].map(mode=>`<section><h2>${kind} / ${mode}</h2><iframe title="${kind} ${mode}" src="${kind}-${mode}.html"></iframe></section>`)).join('')+'</div></html>');
+console.log('Rendered six previews in outputs/email-previews.');

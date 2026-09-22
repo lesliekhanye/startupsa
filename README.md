@@ -49,3 +49,9 @@ Startup owners can edit their listing details from My account. Every edit return
 My account is a dedicated `/account` page rather than a popup. It shows the signed-in email, submission totals, review statuses, review notes, startup cards, edit actions, notification-delivery status, and sign-out. Its data query is always filtered to the authenticated owner's user ID, including when a moderator opens the route directly.
 
 Owners can also replace a startup logo while editing. A replacement is normalized to PNG in the browser, stored at a new owner-bound private object path, and reviewed with the other changes. The existing public logo remains live until approval. Superseded pending and approved logo objects are removed after a successful replacement. Apply `202609210001_owner_logo_edits.sql` after the owner-edit migration.
+
+## Security and launch readiness
+
+See [LAUNCH-READINESS.md](./LAUNCH-READINESS.md) for implementation coverage, checks and remaining deployment requirements. `npm test` runs isolated database, voting-cookie, notification and security tests. `node scripts/check-secrets.mjs` scans Git history/current files and compares configured secrets against built browser assets without printing values. `node scripts/preview-emails.mjs` generates light/dark email previews under ignored `outputs/`.
+
+The canonical domain defaults to `https://startups.summit88.co.za`; operator/contact defaults are `startupsSA` and `central@summit88.co.za`. Keep `PUBLIC_LAUNCH=false` until search indexing is intended. Vercel Analytics is consent-gated and remains off unless `VERCEL_ANALYTICS_ENABLED=true`; its endpoints must first be provisioned through a suitable Vercel deployment/integration. This project currently builds as a Cloudflare Worker.

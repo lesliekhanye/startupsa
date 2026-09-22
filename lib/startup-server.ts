@@ -1,3 +1,4 @@
+import {renderEmail} from './email-templates';
 import {env} from 'cloudflare:workers';
 import {createClient} from '@supabase/supabase-js';
 export const response=(body:object,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
@@ -34,7 +35,7 @@ export async function deliverNotifications(admin:ReturnType<typeof adminClient>,
    const [{data:item,error:itemError},{data:account,error:accountError}]=await Promise.all([admin.from('startup_submissions').select('name,deleted_at').eq('id',job.submission_id).single(),admin.auth.admin.getUserById(job.owner_id)]);
    if(itemError||accountError||!item||!account.user?.email||!account.user.email_confirmed_at)throw new Error('Recipient unavailable');
    if(item.deleted_at){pending=true;continue}const approved=job.event==='approved';
-   const sent=await fetch('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(15000),headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':`startup-sa-${job.id}`},body:JSON.stringify({from:env.RESEND_FROM_EMAIL,to:[account.user.email],subject:approved?'Your startup has been approved — Startup SA':'Submission received — Startup SA',text:approved?`Good news! ${item.name} has been approved and is now listed on Startup SA.\n\nOpen Startup SA and find your startup on the leaderboard.\n\nThanks for sharing what you’re building.\nThe Startup SA team`:`We’ve received ${item.name} and it is now awaiting review.\n\nWe’ll email you again once it is approved. You can check the status in My account on Startup SA.\n\nThe Startup SA team`})});
+   const sent=await fetch('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(15000),headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':`startup-sa-${job.id}`},body:JSON.stringify({from:env.RESEND_FROM_EMAIL,to:[account.user.email],...renderEmail(approved?'approved':'submitted',item.name,env.SITE_URL||'https://startups.summit88.co.za')})});
    if(!sent.ok)throw new Error('Email provider unavailable');
    const {error:saveError}=await admin.from('startup_email_outbox').update({sent_at:new Date().toISOString()}).eq('id',job.id);if(saveError)pending=true;
   }catch{pending=true}
