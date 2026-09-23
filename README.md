@@ -70,6 +70,6 @@ binding is required for this target. D1 is only an unused starter example.
 Vercel function, security headers and static assets without contacting Supabase or
 sending email. The existing `npm run dev` / `npm run build` Worker workflow remains
 available. Vercel's platform IP header is used for sign-in and voting rate limits.
-Enable Vercel Analytics in the dashboard before setting `VERCEL_ANALYTICS_ENABLED=true`.
+Enable Vercel Analytics and Speed Insights in the dashboard before setting `VERCEL_ANALYTICS_ENABLED=true`.
 A real deployment with configured credentials still needs sign-in, submission and
 approval verification in the browser.
