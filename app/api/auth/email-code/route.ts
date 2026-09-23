@@ -1,3 +1,4 @@
+import {clientIp} from '@/lib/client-ip';
 import {renderEmail} from '@/lib/email-templates';
 import {digest} from '@/lib/guest-voting';
 import {env} from 'cloudflare:workers';
@@ -12,7 +13,7 @@ export async function POST(request:Request){
   try{const reader=request.body?.getReader();if(!reader)return reply({error:'Invalid request.'},400);const chunks:Uint8Array[]=[];let size=0;while(true){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>1024){await reader.cancel();return reply({error:'Invalid request.'},400)}chunks.push(part.value)}const combined=new Uint8Array(size);let offset=0;for(const chunk of chunks){combined.set(chunk,offset);offset+=chunk.length}email=z.object({email:z.string().trim().toLowerCase().email().max(254),website:z.string().max(0).optional()}).parse(JSON.parse(new TextDecoder().decode(combined))).email}catch{return reply({error:'Enter a valid email address.'},400)}
   const client=createClient(env.SUPABASE_URL,env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
   try{
-    const ip=request.headers.get('cf-connecting-ip')||'local-development';
+    const ip=clientIp(request);
     const reservation=await client.rpc('reserve_startup_email',{email_hash:await digest('login-email:'+email),ip_hash:await digest('login-ip:'+new Date().toISOString().slice(0,10)+':'+ip)});
     if(reservation.error)return reply({error:'Email sign-in is temporarily unavailable.'},503);
     if(!reservation.data)return reply({error:'Please wait a minute before requesting another code.'},429);

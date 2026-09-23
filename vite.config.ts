@@ -1,4 +1,7 @@
 import vinext from "vinext";
+import { nitro } from "nitro/vite";
+import tailwind from "@tailwindcss/postcss";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import hostingConfig from "./.openai/hosting.json";
 import { readExecutionProfile } from "./scripts/execution-profile.mjs";
@@ -36,6 +39,19 @@ const localBindingConfig = {
 };
 
 export default defineConfig(async () => {
+  if (process.env.DEPLOY_TARGET === "vercel" || process.env.VERCEL === "1") {
+    return {
+      // Vite's server CSS resolver otherwise externalizes these bare imports.
+      resolve: { alias: [
+        { find: /^tailwindcss$/, replacement: fileURLToPath(new URL("./node_modules/tailwindcss/index.css", import.meta.url)) },
+        { find: /^tw-animate-css$/, replacement: fileURLToPath(new URL("./node_modules/tw-animate-css/dist/tw-animate.css", import.meta.url)) },
+        { find: "cloudflare:workers", replacement: fileURLToPath(new URL("./lib/vercel-env.ts", import.meta.url)) },
+      ] },
+      css: { postcss: { plugins: [tailwind()] } },
+      define: { "process.env.DEPLOY_TARGET": JSON.stringify("vercel") },
+      plugins: [vinext(), nitro({ preset: "vercel", vercel: { functions: { runtime: "nodejs22.x" } } })],
+    };
+  }
   // Use Miniflare's local Request.cf placeholder unless fetching is requested.
   process.env.CLOUDFLARE_CF_FETCH_ENABLED ??= "false";
   process.env.WRANGLER_SEND_METRICS ??= "false";

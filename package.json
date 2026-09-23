@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22.13.0"
+    "node": "22.x"
   },
   "scripts": {
     "install:ci": "node scripts/install-ci.mjs",
@@ -14,7 +14,8 @@
     "db:generate": "drizzle-kit generate",
     "test:database": "node scripts/test-startup-database.mjs",
     "test:security": "node scripts/test-security.mjs",
-    "test": "npm run test:database && node scripts/test-guest-cookie.mjs && node scripts/test-startup-notifications.mjs && npm run test:security"
+    "test": "npm run test:database && node scripts/test-guest-cookie.mjs && node scripts/test-startup-notifications.mjs && npm run test:security",
+    "build:vercel": "DEPLOY_TARGET=vercel vite build"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -58,6 +59,7 @@
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
     "eslint-config-next": "16.3.4",
+    "nitro": "3.0.260903-beta",
     "pg": "^8.23.0",
     "react-server-dom-webpack": "19.2.6",
     "tailwindcss": "4.2.1",

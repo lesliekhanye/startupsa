@@ -55,3 +55,21 @@ Owners can also replace a startup logo while editing. A replacement is normalize
 See [LAUNCH-READINESS.md](./LAUNCH-READINESS.md) for implementation coverage, checks and remaining deployment requirements. `npm test` runs isolated database, voting-cookie, notification and security tests. `node scripts/check-secrets.mjs` scans Git history/current files and compares configured secrets against built browser assets without printing values. `node scripts/preview-emails.mjs` generates light/dark email previews under ignored `outputs/`.
 
 The canonical domain defaults to `https://startups.summit88.co.za`; operator/contact defaults are `startupsSA` and `central@summit88.co.za`. Keep `PUBLIC_LAUNCH=false` until search indexing is intended. Vercel Analytics is consent-gated and remains off unless `VERCEL_ANALYTICS_ENABLED=true`; its endpoints must first be provisioned through a suitable Vercel deployment/integration. This project currently builds as a Cloudflare Worker.
+
+## Vercel deployment
+
+Vercel reads `vercel.json`: framework detection is disabled and `npm run build:vercel`
+produces Nitro's Build Output API artifact in `.vercel/output`. Use Node.js 22.x.
+Remove conflicting dashboard build/output overrides. Do not select the Next.js preset.
+Configure the values listed in `.env.example` in Vercel's server environment settings.
+Supabase and Resend secrets remain server-only; the public configuration endpoint
+returns only the Supabase URL and publishable key. No Cloudflare account or D1
+binding is required for this target. D1 is only an unused starter example.
+
+`npm run build:vercel` builds locally; `node scripts/test-vercel.mjs` checks the actual
+Vercel function, security headers and static assets without contacting Supabase or
+sending email. The existing `npm run dev` / `npm run build` Worker workflow remains
+available. Vercel's platform IP header is used for sign-in and voting rate limits.
+Enable Vercel Analytics in the dashboard before setting `VERCEL_ANALYTICS_ENABLED=true`.
+A real deployment with configured credentials still needs sign-in, submission and
+approval verification in the browser.
