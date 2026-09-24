@@ -6,7 +6,7 @@ import vm from 'node:vm';
 function load(file,require=()=>({})){const exports={};vm.runInNewContext(ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,require,URL,Uint8Array,DataView,Blob,DecompressionStream,Response,TextDecoder,TextEncoder,Date,Set});return exports}
 const {renderEmail}=load('lib/email-templates.ts');
 for(const kind of ['signin','submitted','approved']){
- const email=renderEmail(kind,'<script>alert("x")</script>','https://startups.summit88.co.za');
+ const email=renderEmail(kind,'<script>alert("x")</script>','https://startupsafrica.summit88.co.za');
  assert.ok(email.html.includes('prefers-color-scheme:dark'));assert.ok(email.html.includes('color-scheme'));assert.ok(email.text);assert.ok(!email.html.includes('<script>'));assert.ok(email.html.includes('&lt;script&gt;'));assert.ok(!email.html.includes('http://'));assert.ok(!email.html.includes('<img'));
 }
 assert.ok(!renderEmail('submitted','Safe','javascript:alert(1)').html.includes('href='));
@@ -24,11 +24,11 @@ console.log('PASS: email escaping, HTTPS-only links, light/dark templates, PNG C
 const proxyExports={};
 const NextResponse={next:({request})=>{const r=new Response(null);r.forwardedHeaders=request.headers;return r},redirect:(url,status)=>new Response(null,{status,headers:{Location:String(url)}}),json:Response.json};
 vm.runInNewContext(ts.transpileModule(readFileSync('proxy.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:proxyExports,require:name=>name==='next/server'?{NextResponse}:name==='cloudflare:workers'?{env:{SUPABASE_URL:'https://example.supabase.co'}}:{},URL,Headers,Response,process:{env:{NODE_ENV:'production'}},crypto:globalThis.crypto,btoa});
-const redirect=proxyExports.proxy(new Request('http://startups.summit88.co.za/'));
-assert.equal(redirect.status,308);assert.equal(redirect.headers.get('location'),'https://startups.summit88.co.za/');
-const secure=proxyExports.proxy(new Request('https://startups.summit88.co.za/'));
+const redirect=proxyExports.proxy(new Request('http://startupsafrica.summit88.co.za/'));
+assert.equal(redirect.status,308);assert.equal(redirect.headers.get('location'),'https://startupsafrica.summit88.co.za/');
+const secure=proxyExports.proxy(new Request('https://startupsafrica.summit88.co.za/'));
 assert.equal(secure.headers.get('strict-transport-security'),'max-age=31536000');assert.ok(!secure.headers.get('content-security-policy').includes('unsafe-eval'));assert.ok(secure.headers.get('content-security-policy').includes('https://example.supabase.co wss://example.supabase.co'));
 assert.equal(secure.headers.get('content-security-policy'),secure.forwardedHeaders.get('content-security-policy'));
-const privatePage=proxyExports.proxy(new Request('https://startups.summit88.co.za/admin'));
+const privatePage=proxyExports.proxy(new Request('https://startupsafrica.summit88.co.za/admin'));
 assert.equal(privatePage.headers.get('cache-control'),'private, no-store');assert.equal(privatePage.headers.get('x-robots-tag'),'noindex, nofollow');
 console.log('PASS: production HTTPS redirect, HSTS, nonce propagation, constrained connections, no eval, private page caching and indexing protection.');

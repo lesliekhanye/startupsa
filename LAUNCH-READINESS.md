@@ -29,7 +29,7 @@ Application limits do not establish the shared Supabase project's direct Auth AP
 
 ## Privacy, SEO and usability
 
-- Privacy and terms pages use `startupsSA`, `central@summit88.co.za` and `https://startups.summit88.co.za`. Privacy text describes public listing fields, private review data, cookies, retention, providers, shared authentication and rights/contact options. Operator review of actual retention and cross-border processing arrangements remains necessary.
+- Privacy and terms pages use `startupsSA`, `central@summit88.co.za` and `https://startupsafrica.summit88.co.za`. Privacy text describes public listing fields, private review data, cookies, retention, providers, shared authentication and rights/contact options. Operator review of actual retention and cross-border processing arrangements remains necessary.
 - Vercel Analytics and Speed Insights are integrated with debug disabled, query/hash stripping and private-route filtering. They load on public pages without a consent prompt. No advertising trackers were added. This Cloudflare Worker project does not provision Vercel analytics endpoints; enable both products in a Vercel deployment for collection.
 - Titles/descriptions, Open Graph/Twitter metadata, a 1200×630 compressed PNG social card, SVG favicon and Apple touch icon are present. Public startup details and metadata render on the server; missing listings return 404.
 - `/robots.txt` and `/sitemap.xml` use the canonical site configuration. Public pages are open to indexing; private routes stay excluded.

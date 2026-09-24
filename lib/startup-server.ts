@@ -35,7 +35,7 @@ export async function deliverNotifications(admin:ReturnType<typeof adminClient>,
    const [{data:item,error:itemError},{data:account,error:accountError}]=await Promise.all([admin.from('startup_submissions').select('name,deleted_at').eq('id',job.submission_id).single(),admin.auth.admin.getUserById(job.owner_id)]);
    if(itemError||accountError||!item||!account.user?.email||!account.user.email_confirmed_at)throw new Error('Recipient unavailable');
    if(item.deleted_at){pending=true;continue}
-   const email=job.event==='rejected'?renderRejectionEmail(item.name,job.review_note||'Please review your submission and update its details.',env.SITE_URL||'https://startups.summit88.co.za'):renderEmail(job.event==='approved'?'approved':'submitted',item.name,env.SITE_URL||'https://startups.summit88.co.za');
+   const email=job.event==='rejected'?renderRejectionEmail(item.name,job.review_note||'Please review your submission and update its details.',env.SITE_URL||'https://startupsafrica.summit88.co.za'):renderEmail(job.event==='approved'?'approved':'submitted',item.name,env.SITE_URL||'https://startupsafrica.summit88.co.za');
    const sent=await fetch('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(15000),headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':`startup-sa-${job.id}`},body:JSON.stringify({from:env.RESEND_FROM_EMAIL,to:[account.user.email],...email})});
    if(!sent.ok)throw new Error('Email provider unavailable');
    const {error:saveError}=await admin.from('startup_email_outbox').update({sent_at:new Date().toISOString()}).eq('id',job.id);if(saveError)pending=true;
@@ -62,7 +62,7 @@ export async function deliverAdminReviewNotifications(admin:ReturnType<typeof ad
     if(skipError)pending=true;
     continue;
    }
-   const sent=await fetch('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(15000),headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':`startup-admin-${job.id}`},body:JSON.stringify({from:env.RESEND_FROM_EMAIL,to:[moderator.user.email],...renderAdminReviewEmail(item.name,env.SITE_URL||'https://startups.summit88.co.za',job.event==='resubmitted')})});
+   const sent=await fetch('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(15000),headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':`startup-admin-${job.id}`},body:JSON.stringify({from:env.RESEND_FROM_EMAIL,to:[moderator.user.email],...renderAdminReviewEmail(item.name,env.SITE_URL||'https://startupsafrica.summit88.co.za',job.event==='resubmitted')})});
    if(!sent.ok)throw new Error('Email provider unavailable');
    const {error:saveError}=await admin.from('startup_admin_email_outbox').update({sent_at:new Date().toISOString()}).eq('id',job.id);if(saveError)pending=true;
   }catch{pending=true}

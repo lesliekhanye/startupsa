@@ -19,7 +19,7 @@ export function renderEmail(kind: 'signin' | 'submitted' | 'approved', value: st
  return { subject, text, html };
 }
 export function renderAdminReviewEmail(name:string,siteUrl?:string,resubmitted=false){
- const origin=safeOrigin(siteUrl)||'https://startups.summit88.co.za';
+ const origin=safeOrigin(siteUrl)||'https://startupsafrica.summit88.co.za';
  const subject=`${resubmitted?'Resubmitted for review':'Review needed'}: ${name} — StartupsAfrica`;
  const url=`${origin}/admin`;
  const text=`${resubmitted?'A founder has resubmitted':'A new startup has been submitted for review'}: ${name}.\n\nOpen the review queue: ${url}`;
@@ -27,7 +27,7 @@ export function renderAdminReviewEmail(name:string,siteUrl?:string,resubmitted=f
  return {subject,text,html};
 }
 export function renderRejectionEmail(name:string,reason:string,siteUrl?:string){
- const origin=safeOrigin(siteUrl)||'https://startups.summit88.co.za';
+ const origin=safeOrigin(siteUrl)||'https://startupsafrica.summit88.co.za';
  const subject=`Changes needed for ${name} — StartupsAfrica`;
  const url=`${origin}/account`;
  const text=`Your submission for ${name} needs changes before it can be published.\n\nReview note: ${reason}\n\nEdit your submission: ${url}`;

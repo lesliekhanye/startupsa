@@ -4,7 +4,7 @@ import {join} from 'node:path';
 process.env.NODE_ENV='production';
 for(const key of ['SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','SUPABASE_SERVICE_ROLE_KEY','RESEND_API_KEY'])delete process.env[key];
 const {default:handler}=await import('../.vercel/output/functions/__server.func/index.mjs');
-const base='https://startups.summit88.co.za';
+const base='https://startupsafrica.summit88.co.za';
 let count=0;
 async function check(path,status,init){const r=await handler.fetch(new Request(base+path,init));assert.equal(r.status,status,path);count++;return r;}
 for(const path of ['/','/account','/admin','/submit','/privacy','/terms']){

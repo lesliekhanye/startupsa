@@ -20,7 +20,7 @@ export async function POST(request:Request){
     const generated=await client.auth.admin.generateLink({type:'magiclink',email});
     if(generated.error||!generated.data.properties?.email_otp)return reply({error:'Could not prepare your sign-in code. Please try again later.'},503);
     const code=generated.data.properties.email_otp;
-    const sent=await fetch('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(15000),headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from:env.RESEND_FROM_EMAIL,to:[email],...renderEmail('signin',code,env.SITE_URL||'https://startups.summit88.co.za')})});
+    const sent=await fetch('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(15000),headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from:env.RESEND_FROM_EMAIL,to:[email],...renderEmail('signin',code,env.SITE_URL||'https://startupsafrica.summit88.co.za')})});
     if(!sent.ok)return reply({error:'Could not send your code. Please try again later.'},503);
     return reply({sent:true});
   }catch{return reply({error:'Email sign-in is temporarily unavailable. Please retry.'},503)}
