@@ -8,12 +8,13 @@ import {ArrowRight,ChevronLeft} from "lucide-react";
 import {Select,SelectTrigger,SelectValue,SelectContent,SelectItem} from "@/components/ui/select";
 import {toast} from "sonner";
 import {useStartupBackend} from '@/hooks/use-startup-backend';
-import {submissionSchema} from '@/lib/startup-schema';
+import {submissionSchema,startupCategories} from '@/lib/startup-schema';
 import {prepareLogo} from '@/components/startup-logo';
 import {SignInDialog} from '@/components/startup-account';
+import {InfinityLoop} from '@/components/infinity-loop';
 
-const categories=["All startups","Fintech","AI","SaaS","Climate / Energy","Health","Education","Commerce","Mobility","AgriTech","Developer Tools","Other"];
-const emptyDraft={name:"",website:"",pitch:"",category:"",city:"",stage:"",founder:"",year:"2026",story:""};
+const categories=["All startups",...startupCategories];
+const emptyDraft={name:"",website:"",pitch:"",category:"",city:"",country:"",stage:"",founder:"",year:"2026",story:""};
 
 export default function SubmitPage(){
  const backend=useStartupBackend();
@@ -23,7 +24,7 @@ export default function SubmitPage(){
  const submissionRequest=useRef<{id:string;body:string}|null>(null);
 
  const logoPreview=useObjectUrl(logo);
- useEffect(()=>{try{const d=JSON.parse(localStorage.getItem("startup-sa-draft")||"null");if(d&&Object.keys(emptyDraft).every(k=>typeof d[k]==="string"))queueMicrotask(()=>setDraft(d))}catch{}},[]);
+ useEffect(()=>{try{const d=JSON.parse(localStorage.getItem("startup-sa-draft")||"null");if(d&&Object.keys(emptyDraft).every(k=>typeof (d[k]??"")==="string"))queueMicrotask(()=>setDraft({...emptyDraft,...d}))}catch{}},[]);
  
  // Force auth if needed
  useEffect(()=>{
@@ -70,7 +71,7 @@ export default function SubmitPage(){
      <div className="submit-container success-container">
        <div className="success-icon"><ArrowRight size={40}/></div>
        <h1>{backend.client?'Sent for review.':'Your draft is saved.'}</h1>
-       <p>{backend.client?emailPending?'Your submission is saved. Your confirmation email is queued for retry; check My account for updates. We’ll also email you once approved.':'Your submission is saved. A confirmation email is on its way, and we’ll email you again once approved. Check My account for its review status.':saved?'Saved on this device.':'This preview saves a local draft; it does not publish your listing.'}</p>
+       <p>{backend.client?emailPending?'Your submission is saved. Your confirmation email is queued for retry; check My account for updates. We’ll email you after review.':'Your submission is saved. A confirmation email is on its way, and we’ll email you after review. Check My account for its review status.':saved?'Saved on this device.':'This preview saves a local draft; it does not publish your listing.'}</p>
        <Link className="primary submit-btn" href="/">Back to discovering <ArrowRight size={16}/></Link>
      </div>
    </div>
@@ -81,7 +82,7 @@ export default function SubmitPage(){
      <Link href="/" className="back-link"><ChevronLeft size={16}/> Back</Link>
      <div className="submit-header">
        <h1>Give your startup a head start.</h1>
-       <p>Tell us what you’re building. You’ll receive a confirmation email after submitting and another email once approved.</p>
+       <p>Tell us what you’re building and where in Africa you’re based. You’ll receive a confirmation email after submitting and another email after review.</p>
      </div>
      
      <form className="submit-form" onSubmit={e=>{e.preventDefault();void sendSubmission()}}>
@@ -96,7 +97,7 @@ export default function SubmitPage(){
          </div>
 
          <div className="form-grid">
-           {([['name','Startup name','text'],['website','Website','url'],['founder','Founder name','text'],['city','City','text'],['year','Founded year','number']] as const).map(([key,label,type])=><label key={key}><span>{label}</span><input required type={type} min={type==='number'?1900:undefined} max={type==='number'?new Date().getFullYear():undefined} value={draft[key]} onChange={e=>setDraft({...draft,[key]:e.target.value})}/></label>)}
+           {([['name','Startup name','text'],['website','Website','url'],['founder','Founder name','text'],['city','City','text'],['country','Country','text'],['year','Founded year','number']] as const).map(([key,label,type])=><label key={key}><span>{label}</span><input required type={type} placeholder={key==='country'?'e.g. Kenya':undefined} min={type==='number'?1900:undefined} max={type==='number'?new Date().getFullYear():undefined} value={draft[key]} onChange={e=>setDraft({...draft,[key]:e.target.value})}/></label>)}
            <label><span>Category</span><Select required value={draft.category} onValueChange={v=>setDraft({...draft,category:v})}><SelectTrigger><SelectValue placeholder="Choose a category"/></SelectTrigger><SelectContent>{categories.slice(1).map(c=><SelectItem value={c} key={c}>{c}</SelectItem>)}</SelectContent></Select></label>
            <label><span>Stage</span><Select required value={draft.stage} onValueChange={v=>setDraft({...draft,stage:v})}><SelectTrigger><SelectValue placeholder="Choose a stage"/></SelectTrigger><SelectContent>{['Idea','Building','Launched','Revenue','Growing'].map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></label>
          </div>
@@ -108,7 +109,7 @@ export default function SubmitPage(){
        </fieldset>
 
        <p className="form-legal">By submitting, you confirm that you’re authorised to share this listing and agree to our <Link href="/terms">Terms & conditions</Link>. See our <Link href="/privacy">Privacy policy</Link> for how we handle your information.</p><div className="submit-actions">
-         <button className="primary submit-btn" disabled={sending||logoBusy||backend.status==='loading'||backend.status==='error'} type="submit">{sending?'Submitting…':backend.client?'Submit for review':'Save startup draft'} <ArrowRight size={16}/></button>
+         <button className="primary submit-btn" disabled={sending||logoBusy||backend.status==='loading'||backend.status==='error'} type="submit">{sending?<><InfinityLoop className="button-loader" aria-hidden="true"/> Submitting…</>:backend.client?'Submit for review':'Save startup draft'} {!sending&&<ArrowRight size={16}/>}</button>
        </div>
      </form>
    </div>

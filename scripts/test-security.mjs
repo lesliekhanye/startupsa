@@ -23,7 +23,7 @@ await assert.rejects(()=>validateLogo(valid.subarray(0,24)));
 console.log('PASS: email escaping, HTTPS-only links, light/dark templates, PNG CRC, truncation, dimensions, trailing payloads and decompression limits.');
 const proxyExports={};
 const NextResponse={next:({request})=>{const r=new Response(null);r.forwardedHeaders=request.headers;return r},redirect:(url,status)=>new Response(null,{status,headers:{Location:String(url)}}),json:Response.json};
-vm.runInNewContext(ts.transpileModule(readFileSync('proxy.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:proxyExports,require:name=>name==='next/server'?{NextResponse}:name==='cloudflare:workers'?{env:{SUPABASE_URL:'https://example.supabase.co'}}:{siteConfig:()=>({launched:true})},URL,Headers,Response,process:{env:{NODE_ENV:'production'}},crypto:globalThis.crypto,btoa});
+vm.runInNewContext(ts.transpileModule(readFileSync('proxy.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:proxyExports,require:name=>name==='next/server'?{NextResponse}:name==='cloudflare:workers'?{env:{SUPABASE_URL:'https://example.supabase.co'}}:{},URL,Headers,Response,process:{env:{NODE_ENV:'production'}},crypto:globalThis.crypto,btoa});
 const redirect=proxyExports.proxy(new Request('http://startups.summit88.co.za/'));
 assert.equal(redirect.status,308);assert.equal(redirect.headers.get('location'),'https://startups.summit88.co.za/');
 const secure=proxyExports.proxy(new Request('https://startups.summit88.co.za/'));

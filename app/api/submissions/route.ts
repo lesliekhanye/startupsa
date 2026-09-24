@@ -1,7 +1,7 @@
 import {validateLogo} from '@/lib/png-validation';
 import {z} from 'zod';
 import {submissionSchema} from '@/lib/startup-schema';
-import {authenticate,boundedBody,deliverNotifications,response} from '@/lib/startup-server';
+import {authenticate,boundedBody,deliverAdminReviewNotifications,deliverNotifications,response} from '@/lib/startup-server';
 export const dynamic='force-dynamic';
 export async function POST(request:Request){
  let auth;try{auth=await authenticate(request)}catch{return response({error:'Please sign in with a verified email.'},401)}
@@ -24,10 +24,10 @@ export async function POST(request:Request){
     if(uploadError&&String(uploadError.statusCode)!=='409')throw new Error('Logo upload failed. Please retry.');
    }
   }
-  const {error}=await auth.client.rpc('submit_startup',{payload:{...payload,logo_path:logoPath},request_id:id});if(error)return response({error:'Could not save your submission. Check your details and retry.'},400);
-  const delivery=await deliverNotifications(auth.admin,auth.user.id,id);
+  const {error}=await auth.client.rpc('submit_startup',{payload:{...payload,logo_path:logoPath},request_id:id});if(error){console.error('Startup submission RPC failed',error.code,error.message);return response({error:process.env.NODE_ENV==='production'?'Could not save your submission. Please retry.':`Submission rejected: ${error.message}`},400)}
+  const [delivery]=await Promise.all([deliverNotifications(auth.admin,auth.user.id,id),deliverAdminReviewNotifications(auth.admin)]);
   return response({id,emailPending:delivery.pending});
- }catch(e){return response({error:e instanceof z.ZodError?'Please check the submission details.':'Could not save your submission. Check your details and logo, then retry.'},400)}
+ }catch(e){console.error('Startup submission failed',e);return response({error:e instanceof z.ZodError?'Please check the submission details.':e instanceof Error&&['Invalid logo.','Upload is too large.','Logo upload failed. Please retry.'].includes(e.message)?e.message:process.env.NODE_ENV==='production'?'Could not save your submission. Check your details and logo, then retry.':`Could not save your submission: ${e instanceof Error?e.message:'Unknown error'}`},400)}
 }
 export async function PATCH(request:Request){
  let auth;try{auth=await authenticate(request)}catch{return response({error:'Please sign in with a verified email.'},401)}
@@ -39,6 +39,7 @@ export async function PATCH(request:Request){
   const logo=form.get('logo');
   if(logo instanceof File&&logo.size){const content=await validateLogo(new Uint8Array(await logo.arrayBuffer()));uploaded=`${submissionId}/${editId}.png`;const {error:uploadError}=await auth.admin.storage.from('startup-sa-logos').upload(uploaded,content,{contentType:'image/png',upsert:false,metadata:{owner:auth.user.id}});if(uploadError&&String(uploadError.statusCode)!=='409')throw new Error('Logo upload failed. Please retry.');}
   const {error}=await auth.client.rpc('edit_startup_submission',{submission_id:submissionId,payload,new_logo_path:uploaded??null});if(error)throw new Error(error.message);
+  await deliverAdminReviewNotifications(auth.admin);
   if(uploaded&&previous.logo_path&&previous.logo_path!==uploaded){const {data:published}=await auth.admin.from('startups').select('logo_path').eq('id',submissionId).maybeSingle();if(previous.logo_path!==published?.logo_path)await auth.admin.storage.from('startup-sa-logos').remove([previous.logo_path]);}
   return response({saved:true});
  }catch(error){return response({error:error instanceof z.ZodError?'Please check the startup details.':'Could not save your changes. Check your details and logo, then retry.'},400)}

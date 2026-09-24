@@ -1,6 +1,5 @@
 import {NextResponse,type NextRequest} from 'next/server';
 import {env} from 'cloudflare:workers';
-import {siteConfig} from './lib/site-config';
 export function proxy(request:NextRequest){
  const url=new URL(request.url),local=['localhost','127.0.0.1','[::1]'].includes(url.hostname);
  if(!local&&url.protocol!=='https:'){url.protocol='https:';return NextResponse.redirect(url,308)}
@@ -19,7 +18,7 @@ export function proxy(request:NextRequest){
  response.headers.set('Permissions-Policy','camera=(), microphone=(), geolocation=(), payment=()');
  if(!local)response.headers.set('Strict-Transport-Security','max-age=31536000');
  if(url.pathname.startsWith('/api/')||/^\/(admin|account|submit)(\/|$)/.test(url.pathname))response.headers.set('Cache-Control','private, no-store');
- if(!siteConfig().launched||/^\/(admin|account|submit|api)(\/|$)/.test(url.pathname))response.headers.set('X-Robots-Tag','noindex, nofollow');
+ if(/^\/(admin|account|submit|api)(\/|$)/.test(url.pathname))response.headers.set('X-Robots-Tag','noindex, nofollow');
  return response;
 }
 export const config={matcher:['/((?!_next/static|_next/image|assets/).*)']};

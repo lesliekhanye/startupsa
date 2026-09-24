@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import {readFileSync, readdirSync} from 'node:fs';
 import {join} from 'node:path';
 process.env.NODE_ENV='production';
-process.env.PUBLIC_LAUNCH='false';
 for(const key of ['SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','SUPABASE_SERVICE_ROLE_KEY','RESEND_API_KEY'])delete process.env[key];
 const {default:handler}=await import('../.vercel/output/functions/__server.func/index.mjs');
 const base='https://startups.summit88.co.za';
@@ -14,7 +13,7 @@ for(const path of ['/','/account','/admin','/submit','/privacy','/terms']){
  assert.equal(r.headers.get('x-content-type-options'),'nosniff');
  const nonce=r.headers.get('content-security-policy').match(/'nonce-([^']+)'/)[1];
  assert.ok(html.includes(`nonce="${nonce}"`),`${path}: nonce`);
- assert.equal(r.headers.get('x-robots-tag'),'noindex, nofollow');
+ assert.equal(r.headers.get('x-robots-tag'),['/account','/admin','/submit'].includes(path)?'noindex, nofollow':null);
 }
 for(const path of ['/.env','/.dev.vars','/.git/config','/nonexistent-page'])await check(path,404);
 await check('/api/admin',401);
@@ -30,8 +29,8 @@ const config=await(await check('/api/backend-config',200)).json();
 assert.deepEqual(config,{configured:true,url:process.env.SUPABASE_URL,key:process.env.SUPABASE_PUBLISHABLE_KEY});
 process.env.SUPABASE_PUBLISHABLE_KEY=['sb', 'secret', 'invalid_public_key'].join('_');
 await check('/api/backend-config',503);
-assert.ok((await(await check('/robots.txt',200)).text()).includes('Disallow: /'));
-assert.ok((await(await check('/sitemap.xml',200)).text()).includes('<urlset'));
+const robots=await(await check('/robots.txt',200)).text();assert.ok(robots.includes('Allow: /'));assert.ok(!robots.includes('Disallow: /\n'));
+await check('/sitemap.xml',503);
 const output=JSON.parse(readFileSync('.vercel/output/config.json','utf8'));
 assert.equal(output.version,3);assert.ok(output.routes.some(r=>r.dest==='/__server'));
 assert.equal(JSON.parse(readFileSync('.vercel/output/functions/__server.func/.vc-config.json','utf8')).runtime,'nodejs22.x');

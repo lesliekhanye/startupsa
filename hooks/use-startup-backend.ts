@@ -17,7 +17,7 @@ export function useStartupBackend(){
     const [board,role,items]=await Promise.all([
       (async()=>{try{const {data:auth}=await c.auth.getSession();const r=await fetch('/api/leaderboard',{cache:'no-store',headers:auth.session?{Authorization:`Bearer ${auth.session.access_token}`}:{}});const result=await r.json() as {records?:StartupRecord[]};return {data:result.records??[],error:!r.ok}}catch{return {data:[],error:true}}})(),
       userId?c.rpc('is_startup_moderator'):Promise.resolve({data:false,error:null}),
-      userId?c.from('startup_submissions').select('id,name,website,pitch,story,category,city,stage,founded_year,founder,status,review_note,created_at,logo_path').eq('owner_id',userId).order('created_at',{ascending:false}):Promise.resolve({data:[],error:null}),
+      userId?c.from('startup_submissions').select('id,name,website,pitch,story,category,city,country,stage,founded_year,founder,status,review_note,created_at,logo_path').eq('owner_id',userId).order('created_at',{ascending:false}):Promise.resolve({data:[],error:null}),
     ]);
     if(run!==generation.current.value)return;
     if(board.error||role.error||items.error){setError('The startup service is unavailable. Please retry.');setStatus('error');return}

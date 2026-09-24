@@ -31,9 +31,9 @@ Application limits do not establish the shared Supabase project's direct Auth AP
 
 - Privacy and terms pages use `startupsSA`, `central@summit88.co.za` and `https://startups.summit88.co.za`. Privacy text describes public listing fields, private review data, cookies, retention, providers, shared authentication and rights/contact options. Operator review of actual retention and cross-border processing arrangements remains necessary.
 - Cookie settings offer equally visible essential-only and analytics options. Analytics starts only after opt-in and can be withdrawn. No advertising trackers were added.
-- Vercel Analytics is integrated with debug disabled, query/hash stripping and private-route filtering. `VERCEL_ANALYTICS_ENABLED` defaults off. This Cloudflare Worker project does not provision Vercel analytics endpoints: enable Analytics in an appropriate Vercel deployment/integration before turning the flag on. Adding the package alone does not activate collection.
+- Vercel Analytics and Speed Insights are integrated with debug disabled, query/hash stripping and private-route filtering. They load on public pages after visitor consent. This Cloudflare Worker project does not provision Vercel analytics endpoints; enable both products in a Vercel deployment for collection.
 - Titles/descriptions, Open Graph/Twitter metadata, a 1200×630 compressed PNG social card, SVG favicon and Apple touch icon are present. Public startup details and metadata render on the server; missing listings return 404.
-- `/robots.txt` and `/sitemap.xml` use the canonical site configuration. Indexing remains disabled until `PUBLIC_LAUNCH=true`; private routes stay excluded. This flag is an indexing setting, not an authentication or site-privacy barrier.
+- `/robots.txt` and `/sitemap.xml` use the canonical site configuration. Public pages are open to indexing; private routes stay excluded.
 - Custom 404/error pages provide recovery navigation. Privacy/terms/contact links are available site-wide. The homepage has one prominent submission CTA and a secondary sign-in control.
 - Increased contrast for secondary text, visible keyboard focus, reduced-motion support, mobile form/consent layouts, logo alt text/dimensions and lazy decoding/loading are included. Checked homepage at 320px and submission/sign-in at 390px without horizontal overflow; this is not a full WCAG audit.
 - Vinext's production RSC Link runtime failed during browser testing. Internal links use a small standard-anchor component, and CTA navigation loads a new document. This restores reliable navigation and refreshes CSP nonces; reconsider client navigation when the framework issue is resolved.
@@ -52,7 +52,7 @@ Application limits do not establish the shared Supabase project's direct Auth AP
 1. Configure the existing private Supabase/Resend values on the deployment platform; do not commit credentials or copy `.dev.vars` into public assets.
 2. Public defaults already match the supplied domain, legal name and contact. Environment variables `SITE_URL`, `LEGAL_ENTITY_NAME` and `PRIVACY_CONTACT_EMAIL` can override them.
 3. Verify domain TLS, live security headers, transactional sender/domain configuration and actual inbox delivery. Complete one founder submission/edit and moderator approval with authorised accounts.
-4. Provision Vercel Analytics endpoints before setting `VERCEL_ANALYTICS_ENABLED=true`; verify consent and private-route exclusions against actual collected events.
-5. Set `PUBLIC_LAUNCH=true` only when ready for search indexing. Confirm legal text against actual operations and provider arrangements.
+4. Provision Vercel Analytics and Speed Insights endpoints; verify consent and private-route exclusions against actual collected events.
+5. Confirm legal text against actual operations and provider arrangements.
 
 References: [Vercel Analytics setup](https://vercel.com/docs/analytics/quickstart), [Vercel Analytics privacy](https://vercel.com/docs/analytics/privacy-policy), [POPIA legislation](https://www.justice.gov.za/legislation/acts/2013-004.pdf), [Information Regulator contact](https://inforegulator.org.za/contact-us/).

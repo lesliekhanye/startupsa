@@ -1,1 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><rect width="1200" height="630" fill="#f4f5f1"/><rect x="32" y="32" width="1136" height="566" rx="28" fill="#fff" stroke="#dfe4db"/><path d="M80 129h39M93 113h26M108 97h11" stroke="#2e4e38" stroke-width="7" stroke-linecap="round"/><text x="138" y="125" font-family="Arial,sans-serif" font-size="38" font-weight="700" fill="#252b24">startup<tspan font-weight="400">sa</tspan><tspan fill="#688059">.</tspan></text><text x="80" y="270" font-family="Arial,sans-serif" font-size="76" font-weight="700" letter-spacing="-3" fill="#252b24">Before everyone</text><text x="80" y="360" font-family="Georgia,serif" font-size="80" font-style="italic" letter-spacing="-3" fill="#2e4e38">knows them.</text><text x="84" y="430" font-family="Arial,sans-serif" font-size="26" fill="#59634f">Discover what South Africa is building next.</text><rect x="84" y="482" width="300" height="54" rx="9" fill="#2e4e38"/><text x="108" y="517" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#fff">A little local love. A big lift.</text><circle cx="1035" cy="462" r="68" fill="#edf3e6"/><path d="M1006 477l29-30 29 30m-29-30v65" fill="none" stroke="#2e4e38" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f4f5f1"/>
+  <rect x="32" y="32" width="1136" height="566" rx="28" fill="#fff" stroke="#dfe4db"/>
+  <path d="M80 129h39M93 113h26M108 97h11" stroke="#2e4e38" stroke-width="7" stroke-linecap="round"/>
+  <text x="138" y="125" font-family="Arial,sans-serif" font-size="38" font-weight="700" fill="#252b24">StartupsAfrica</text>
+  <text x="80" y="265" font-family="Arial,sans-serif" font-size="58" font-weight="700" letter-spacing="-2" fill="#252b24">Discover Africa’s next generation</text>
+  <text x="80" y="333" font-family="Arial,sans-serif" font-size="58" font-weight="700" letter-spacing="-2" fill="#252b24">of startups.</text>
+  <text x="84" y="411" font-family="Arial,sans-serif" font-size="24" fill="#59634f">Find emerging companies, new launches and founders worth watching.</text>
+  <rect x="84" y="482" width="390" height="54" rx="9" fill="#2e4e38"/>
+  <text x="108" y="517" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#fff">Before everyone knows them.</text>
+  <circle cx="1035" cy="462" r="68" fill="#edf3e6"/>
+  <path d="M1006 477l29-30 29 30m-29-30v65" fill="none" stroke="#2e4e38" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -54,7 +54,11 @@ Owners can also replace a startup logo while editing. A replacement is normalize
 
 See [LAUNCH-READINESS.md](./LAUNCH-READINESS.md) for implementation coverage, checks and remaining deployment requirements. `npm test` runs isolated database, voting-cookie, notification and security tests. `node scripts/check-secrets.mjs` scans Git history/current files and compares configured secrets against built browser assets without printing values. `node scripts/preview-emails.mjs` generates light/dark email previews under ignored `outputs/`.
 
-The canonical domain defaults to `https://startups.summit88.co.za`; operator/contact defaults are `startupsSA` and `central@summit88.co.za`. Keep `PUBLIC_LAUNCH=false` until search indexing is intended. Vercel Analytics is consent-gated and remains off unless `VERCEL_ANALYTICS_ENABLED=true`; its endpoints must first be provisioned through a suitable Vercel deployment/integration. This project currently builds as a Cloudflare Worker.
+The canonical domain defaults to `https://startups.summit88.co.za`; operator/contact defaults are `startupsSA` and `central@summit88.co.za`. Public pages are open to search indexing; private routes remain excluded. Vercel Analytics and Speed Insights load on public pages after visitor consent; their endpoints must be provisioned through a suitable Vercel deployment/integration. This project currently builds as a Cloudflare Worker.
+
+New startup submissions queue an email for each account in `startup_moderators`, addressed to that moderator's verified account email with a link to `/admin`. Apply the latest Supabase migrations and configure `RESEND_API_KEY` and `RESEND_FROM_EMAIL` in the deployment for delivery. Failed sends remain queued and are retried on later submission or notification requests.
+When a founder edits a rejected or approved listing and it returns to pending review, a fresh admin notification is queued and delivery is attempted immediately.
+Founder emails are also queued when a review is approved or rejected. Rejection emails include the moderator's review note and a link to edit the submission in My account.
 
 ## Vercel deployment
 
@@ -70,6 +74,6 @@ binding is required for this target. D1 is only an unused starter example.
 Vercel function, security headers and static assets without contacting Supabase or
 sending email. The existing `npm run dev` / `npm run build` Worker workflow remains
 available. Vercel's platform IP header is used for sign-in and voting rate limits.
-Enable Vercel Analytics and Speed Insights in the dashboard before setting `VERCEL_ANALYTICS_ENABLED=true`.
+Enable Vercel Analytics and Speed Insights in the Vercel dashboard for the deployed project.
 A real deployment with configured credentials still needs sign-in, submission and
 approval verification in the browser.

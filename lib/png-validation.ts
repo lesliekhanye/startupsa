@@ -25,8 +25,8 @@ export async function validateLogo(content: Uint8Array): Promise<Uint8Array> {
    if(length||!compressed.length||end!==content.length)return invalid();parts.push(content.slice(offset,end));ended=true;
   }else{
    if(compressed.length)dataEnded=true;
-   // Reject unknown critical chunks, animation, palettes and embedded payloads.
-   if(!['sRGB','gAMA','cHRM','pHYs'].includes(type))return invalid();
+   // Strip ancillary metadata (including browser color profiles); reject animation and unknown critical chunks.
+   if(!/^[A-Za-z]{4}$/.test(type)||type[0]===type[0].toUpperCase()||['acTL','fcTL','fdAT'].includes(type))return invalid();
   }
   offset=end;
  }
