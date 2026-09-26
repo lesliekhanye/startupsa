@@ -33,7 +33,7 @@ export function startAnalytics({key,host}:AnalyticsConfig){
   capture_performance:false,
   disable_session_recording:true,
   disable_capture_url_hashes:true,
-  advanced_disable_flags:true,
+  advanced_disable_feature_flags:true,
   session_recording:{
    maskAllInputs:true,
    blockSelector:'[role="dialog"], .account-page, .submit-page, .admin-app',
