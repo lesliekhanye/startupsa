@@ -25,7 +25,6 @@ export function startAnalytics({key,host}:AnalyticsConfig){
  if(started||typeof window==='undefined')return;
  posthog.init(key,{
   api_host:host,
-  cookieless_mode:'always',
   person_profiles:'never',
   persistence:'memory',
   autocapture:false,
