@@ -66,7 +66,7 @@ export function syncPublicSessionReplay(path:string){
  if(!started)return;
  if(isPublicAnalyticsPath(path)){
   if(!posthog.sessionRecordingStarted())posthog.startSessionRecording({sampling:true,linked_flag:true,url_trigger:true,event_trigger:true});
- }else if(posthog.sessionRecordingStarted())posthog.stopSessionRecording();
+ }else posthog.stopSessionRecording();
 }
 
 export function capturePublicPageview(path:string){
