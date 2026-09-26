@@ -22,7 +22,10 @@ export function startAnalytics({key,host}:AnalyticsConfig){
   autocapture:false,
   capture_pageview:false,
   capture_pageleave:false,
+  capture_performance:false,
   disable_session_recording:true,
+  disable_external_dependency_loading:true,
+  advanced_disable_flags:true,
   before_send:event=>{
    if(!event||!['$pageview','submit_cta_clicked','startup_website_clicked','startup_vote_added','startup_vote_removed'].includes(event.event))return null;
    const properties={...event.properties};
