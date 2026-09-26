@@ -12,6 +12,15 @@ function cleanUrl(value:string){
  catch{return undefined}
 }
 
+function maskReplayAttribute(name:string,value:string){
+ if(name==='value'||name.startsWith('data-'))return '';
+ if(['href','src','action','poster'].includes(name)){
+  if(value.startsWith('/')&&!value.startsWith('//'))return value.split(/[?#]/,1)[0];
+  return cleanUrl(value)??'';
+ }
+ return value;
+}
+
 export function startAnalytics({key,host}:AnalyticsConfig){
  if(started||typeof window==='undefined')return;
  posthog.init(key,{
@@ -24,21 +33,41 @@ export function startAnalytics({key,host}:AnalyticsConfig){
   capture_pageleave:false,
   capture_performance:false,
   disable_session_recording:true,
-  disable_external_dependency_loading:true,
+  disable_capture_url_hashes:true,
   advanced_disable_flags:true,
+  session_recording:{
+   maskAllInputs:true,
+   blockSelector:'[role="dialog"], .account-page, .submit-page, .admin-app',
+   maskAttributeFn:maskReplayAttribute,
+   maskCapturedNetworkRequestFn:()=>null,
+   captureJsonLd:false,
+   recordHeaders:false,
+   recordBody:false,
+  },
   before_send:event=>{
-   if(!event||!['$pageview','submit_cta_clicked','startup_website_clicked','startup_vote_added','startup_vote_removed'].includes(event.event))return null;
+   if(!event||!['$pageview','$snapshot','submit_cta_clicked','startup_website_clicked','startup_vote_added','startup_vote_removed'].includes(event.event))return null;
    const properties={...event.properties};
    for(const [name,value] of Object.entries(properties)){
     if(typeof value==='string'&&/(url|referrer)/i.test(name))properties[name]=cleanUrl(value)??'';
    }
    let path='';
-   try{path=new URL(String(properties.$current_url)).pathname}catch{return null}
+   try{path=new URL(String(properties.$current_url)).pathname}catch{
+    if(event.event!=='$snapshot')return null;
+    path=window.location.pathname;
+   }
    if(!isPublicAnalyticsPath(path))return null;
+   if(event.event==='$snapshot'&&!isPublicAnalyticsPath(window.location.pathname))return null;
    return {...event,properties};
   },
  });
  started=true;
+}
+
+export function syncPublicSessionReplay(path:string){
+ if(!started)return;
+ if(isPublicAnalyticsPath(path)){
+  if(!posthog.sessionRecordingStarted())posthog.startSessionRecording({sampling:true,linked_flag:true,url_trigger:true,event_trigger:true});
+ }else if(posthog.sessionRecordingStarted())posthog.stopSessionRecording();
 }
 
 export function capturePublicPageview(path:string){
