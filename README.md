@@ -54,7 +54,7 @@ Owners can also replace a startup logo while editing. A replacement is normalize
 
 See [LAUNCH-READINESS.md](./LAUNCH-READINESS.md) for implementation coverage, checks and remaining deployment requirements. `npm test` runs isolated database, voting-cookie, notification and security tests. `node scripts/check-secrets.mjs` scans Git history/current files and compares configured secrets against built browser assets without printing values. `node scripts/preview-emails.mjs` generates light/dark email previews under ignored `outputs/`.
 
-The canonical domain defaults to `https://startupsafrica.summit88.co.za`; operator/contact defaults are `startupsSA` and `central@summit88.co.za`. Public pages are open to search indexing; private routes remain excluded. Vercel Analytics and Speed Insights load on public pages without a consent prompt; their endpoints must be provisioned through a suitable Vercel deployment/integration. This project currently builds as a Cloudflare Worker.
+The canonical domain defaults to `https://startupsafrica.summit88.co.za`; operator/contact defaults are `startupsSA` and `central@summit88.co.za`. Public pages are open to search indexing; private routes remain excluded. PostHog can collect public-page views and selected actions when `POSTHOG_PROJECT_KEY` is configured. `POSTHOG_HOST` defaults to the US ingestion host. Enable cookieless mode in PostHog project settings or PostHog will discard events. Session replay and automatic click capture are disabled, and private routes are excluded. This project currently builds as a Cloudflare Worker.
 
 New startup submissions queue an email for each account in `startup_moderators`, addressed to that moderator's verified account email with a link to `/admin`. Apply the latest Supabase migrations and configure `RESEND_API_KEY` and `RESEND_FROM_EMAIL` in the deployment for delivery. Failed sends remain queued and are retried on later submission or notification requests.
 When a founder edits a rejected or approved listing and it returns to pending review, a fresh admin notification is queued and delivery is attempted immediately.
@@ -74,6 +74,6 @@ binding is required for this target. D1 is only an unused starter example.
 Vercel function, security headers and static assets without contacting Supabase or
 sending email. The existing `npm run dev` / `npm run build` Worker workflow remains
 available. Vercel's platform IP header is used for sign-in and voting rate limits.
-Enable Vercel Analytics and Speed Insights in the Vercel dashboard for the deployed project.
+A Vercel deployment can use the same PostHog project key and ingestion host as the Cloudflare Worker deployment.
 A real deployment with configured credentials still needs sign-in, submission and
 approval verification in the browser.

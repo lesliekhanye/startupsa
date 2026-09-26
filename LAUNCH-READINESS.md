@@ -30,7 +30,7 @@ Application limits do not establish the shared Supabase project's direct Auth AP
 ## Privacy, SEO and usability
 
 - Privacy and terms pages use `startupsSA`, `central@summit88.co.za` and `https://startupsafrica.summit88.co.za`. Privacy text describes public listing fields, private review data, cookies, retention, providers, shared authentication and rights/contact options. Operator review of actual retention and cross-border processing arrangements remains necessary.
-- Vercel Analytics and Speed Insights are integrated with debug disabled, query/hash stripping and private-route filtering. They load on public pages without a consent prompt. No advertising trackers were added. This Cloudflare Worker project does not provision Vercel analytics endpoints; enable both products in a Vercel deployment for collection.
+- PostHog is integrated for public-page views and selected actions, with query/hash stripping and private-route filtering. Session replay and automatic click capture are disabled. Collection requires a public PostHog project key (`phc_`); the ingestion host defaults to US Cloud. Cookieless mode must be enabled in the PostHog project.
 - Titles/descriptions, Open Graph/Twitter metadata, a 1200×630 compressed PNG social card, SVG favicon and Apple touch icon are present. Public startup details and metadata render on the server; missing listings return 404.
 - `/robots.txt` and `/sitemap.xml` use the canonical site configuration. Public pages are open to indexing; private routes stay excluded.
 - Custom 404/error pages provide recovery navigation. Privacy/terms/contact links are available site-wide. The homepage has one prominent submission CTA and a secondary sign-in control.
@@ -51,7 +51,7 @@ Application limits do not establish the shared Supabase project's direct Auth AP
 1. Configure the existing private Supabase/Resend values on the deployment platform; do not commit credentials or copy `.dev.vars` into public assets.
 2. Public defaults already match the supplied domain, legal name and contact. Environment variables `SITE_URL`, `LEGAL_ENTITY_NAME` and `PRIVACY_CONTACT_EMAIL` can override them.
 3. Verify domain TLS, live security headers, transactional sender/domain configuration and actual inbox delivery. Complete one founder submission/edit and moderator approval with authorised accounts.
-4. Provision Vercel Analytics and Speed Insights endpoints; verify public-page collection and private-route exclusions against actual collected events.
+4. Configure PostHog, enable cookieless mode, and verify public-page collection and private-route exclusions against actual collected events.
 5. Confirm legal text against actual operations and provider arrangements.
 
-References: [Vercel Analytics setup](https://vercel.com/docs/analytics/quickstart), [Vercel Analytics privacy](https://vercel.com/docs/analytics/privacy-policy), [POPIA legislation](https://www.justice.gov.za/legislation/acts/2013-004.pdf), [Information Regulator contact](https://inforegulator.org.za/contact-us/).
+References: [PostHog web analytics installation](https://posthog.com/docs/web-analytics/installation), [PostHog session replay controls](https://posthog.com/docs/session-replay), [POPIA legislation](https://www.justice.gov.za/legislation/acts/2013-004.pdf), [Information Regulator contact](https://inforegulator.org.za/contact-us/).

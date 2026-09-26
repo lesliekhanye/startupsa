@@ -8,6 +8,8 @@ declare namespace Cloudflare {
     SUPABASE_SERVICE_ROLE_KEY?: string;
     RESEND_API_KEY?: string;
     RESEND_FROM_EMAIL?: string;
+    POSTHOG_PROJECT_KEY?: string;
+    POSTHOG_HOST?: string;
     DB?: D1Database;
     BUCKET?: R2Bucket;
   }
